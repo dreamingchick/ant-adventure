@@ -9,3 +9,10 @@
 ## 베짱이 아틀라스 제작 프롬프트
 
 Use case: background-extraction. Asset type: 2D platform game enemy sprite atlas, preserve the attached four grasshopper character identities exactly. Produce a square 2 by 2 equal-cell sprite sheet on actual transparent background. Top-left FAT grasshopper with round belly and smug sleepy face; top-right SKINNY grasshopper with narrow body and nervous face; bottom-left NORMAL cheerful grasshopper; bottom-right SMART grasshopper with exposed brainlike head and round spectacles. Each whole character centered in its own cell, all facing LEFT or left three-quarter view, standing pose with feet aligned at 90 percent of each cell height. Keep entire antennae and legs inside cell with 6 percent padding, clear empty gutters. Keep the soft polished 3D cartoon style and green colors from reference. Remove all Korean text, white background, apple, branch, leaf platforms, parchment, feather and other held props. Only characters, no lettering, no ground, no cast background. Four equally sized cells suitable for canvas source-rectangle rendering.
+
+
+## 설치형 웹앱 아이콘
+
+`dist/icons/`의 PNG 4종은 기존 개미의 첫 번째 포즈를 참조해 만든 단일 정사각형 앱 아이콘을 각 설치 규격으로 내보낸 결과다. 원본 개미 스프라이트는 교체하지 않았다. 내장 이미지 생성으로 제작했다.
+
+제작 프롬프트: Square mobile game app icon for Ant Adventure. Use only the friendly mischievous brown ant in the top-left cell as the exact character identity. Single large head and a little upper body facing right three-quarter, big brown eyes, warm orange-brown face, cute confident smile, both thick curved antennae intact. Soft polished 3D cartoon render matching reference. Deep sage green background with gentle warm circular glow. Full bleed square, no rounded corners, no borders, no lettering, no extra insects or sprite grid. Keep recognisable face and antennae in central 70 percent square safe zone. High legibility at 192 pixels.

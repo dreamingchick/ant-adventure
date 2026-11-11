@@ -23,3 +23,5 @@
  .name-row{align-items:center}.name-row button{min-width:88px}
  .menu-meta{margin-top:14px}.panel button{flex-shrink:0}
 }
+
+.pwa-tools{position:absolute;top:18px;right:28px;z-index:3;display:flex;gap:10px}.pwa-tools button{min-height:54px;padding:11px 20px;font-size:17px;border-radius:16px;color:#eddbb4;background:#263f32e6;border-color:#b5c39970}#install-status:empty{display:none}

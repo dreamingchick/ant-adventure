@@ -3,3 +3,23 @@
 #ant-name,#pause-name{font-size:var(--name-input-size,16px);line-height:1.15;height:48px;-webkit-user-select:text;user-select:text}#pause-name{height:46px}
 
 .landscape-keyboard{width:1060px;border-radius:28px;background:linear-gradient(135deg,#344d3e,#24392f);border:1px solid #a0b08a77;box-shadow:0 20px 80px #0005;padding:24px 32px;display:flex;flex-direction:column;gap:14px}.landscape-keyboard header{position:static;display:flex;align-items:center;justify-content:space-between;pointer-events:auto;text-shadow:none;gap:20px}.landscape-keyboard header small{font-size:11px;letter-spacing:2px;color:#dfc18c}.landscape-keyboard header h2{margin-top:4px}.landscape-keyboard header button{pointer-events:auto}.name-preview-row{display:flex;align-items:center;justify-content:space-between;background:#182e25;padding:13px 22px;border-radius:14px;min-height:66px}.name-preview-row strong{font-size:28px;color:#fff2cc;user-select:none}.name-preview-row strong.selected{background:#f1c47f38;border-radius:5px}.name-preview-row small{font-size:14px;color:#c9d3ba}.name-key-row{display:flex;justify-content:center;gap:9px;margin:8px 0}.name-key-row button{font-size:25px;min-width:74px;height:61px;border-radius:12px;padding:8px 12px;background:#e1ead8;color:#2d4433;border-color:#f3f5e9;box-shadow:0 3px 0 #12271c99}.name-key-row button:active{transform:translateY(2px)}.name-key-row.tools button{font-size:19px;background:#506c52;color:#eef3da}.name-key-row.tools .active{background:#f1c47f;color:#263c2e}.name-key-row .space{flex:1;max-width:330px}.name-key-row .erase{min-width:100px}.landscape-keyboard>#name-done{align-self:flex-end;min-width:265px;font-size:20px;padding:13px 22px}
+
+/* v0.1.3: larger touch targets without hiding the floor under movement controls. */
+#controls{inset:auto 28px 20px}.movement,.actions{gap:18px}
+#controls button{width:132px;height:124px;border-radius:28px;font-size:34px;border-width:2px}
+#controls .attack{width:148px;height:138px;font-size:32px}
+#controls .jump{width:160px;height:160px;font-size:32px}
+#controls #interact{width:128px;height:110px;font-size:24px}
+#controls small{font-size:12px;margin-top:7px}
+#controls .movement button{background:rgba(247,242,227,.30);border-color:rgba(255,255,255,.58);color:#344a34;backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:0 4px 0 #26352b25;text-shadow:0 1px 2px #fff8}
+#controls .movement button.down,#controls .movement button:active{background:rgba(247,242,227,.46);box-shadow:0 1px 0 #26352b25}
+#pause{width:84px;height:78px;padding:0;font-size:29px;border-radius:18px}
+.key-guide{width:300px;max-width:300px;white-space:normal;text-align:center;font-size:11px;line-height:1.5;bottom:3px}
+#boss-hud .boss-remaining{display:block;margin-top:5px;font-size:13px;color:#5c3528;text-shadow:0 1px 3px #fff9}
+@media(pointer:coarse){
+ .key-guide{display:none}
+ .menu-content button,.panel button,.dialog-box button,.landscape-keyboard>button,.landscape-keyboard header button{min-height:68px;font-size:22px}
+ .menu-content{padding-top:58px}.intro{margin-bottom:16px}.menu-buttons{margin-top:14px}
+ .name-row{align-items:center}.name-row button{min-width:88px}
+ .menu-meta{margin-top:14px}.panel button{flex-shrink:0}
+}

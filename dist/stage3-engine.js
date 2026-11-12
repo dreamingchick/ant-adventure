@@ -1,5 +1,5 @@
-import { Game, makeEnemy, FLOOR, WIDTH } from './engine.js?v=0.4.5';
-import { endingFor } from './journey.js?v=0.4.5';
+import { Game, makeEnemy, FLOOR, WIDTH } from './engine.js?v=0.4.6';
+import { endingFor } from './journey.js?v=0.4.6';
 
 export const WINDS = [
   { from: 730, to: 1160, safe: [875, 985], force: -145 },
@@ -8,6 +8,7 @@ export const WINDS = [
 export const windPhase = time => time % 3.5;
 const MOTHER_HP = 12;
 const DUEL_SETTLE_SPEED = 6;
+const CHEER_WINDOW = [1.05,1.83];
 const GATE_X = 3040;
 const checkpoints = [
   { x:105,y:FLOOR,name:'부엌 뒤 문턱' },
@@ -53,13 +54,17 @@ const range = (x,a,b) => x>=a && x<=b;
 const toward = (a,b,speed) => a+Math.sign(b-a)*Math.min(Math.abs(b-a),speed);
 const duelPairs = { player:'mother',mother:'player',spouse:'father',father:'spouse' };
 export const canDuelHit = (source,target) => Object.hasOwn(duelPairs,source)&&duelPairs[source]===target;
+const nextDuelAttacker = duel => (duel.round+1)%3===0
+  ? (duel.advantage==='father'?'spouse':'father')
+  : duel.advantage;
 
 export function cleanStage3(raw) {
   const state = {cleared:raw?.cleared===true,best:Number.isFinite(raw?.best)&&raw.best>0?raw.best:null,bestLevels:raw?.bestLevels??null,bossReward:false,run:null};
   const run=raw?.run;
   if(!run||!Number.isInteger(run.cp)||!checkpoints[run.cp])return state;
   const ids=Array.isArray(run.collected)?[...new Set(run.collected.filter(v=>typeof v==='string'&&/^s\d+$/.test(v)))]:[];
-  state.run={cp:run.cp,bossHp:MOTHER_HP,collected:ids,dead:Array.isArray(run.dead)&&run.dead.includes('patrol')?['patrol']:[],
+  const bossHp=Number.isFinite(run.bossHp)?Math.max(1,Math.min(MOTHER_HP,Math.floor(run.bossHp))):MOTHER_HP;
+  state.run={cp:run.cp,bossHp,collected:ids,dead:Array.isArray(run.dead)&&run.dead.includes('patrol')?['patrol']:[],
     activated:Array.isArray(run.activated)?[...new Set(run.activated.filter(v=>Number.isInteger(v)&&checkpoints[v]))]:[],
     elapsed:Number.isFinite(run.elapsed)&&run.elapsed>0?run.elapsed:0,attemptSugar:count(run.attemptSugar)};
   return state;
@@ -82,8 +87,6 @@ export class ThresholdGame extends Game {
 
   setup(){
     super.setup();
-    this.mother.hp=this.mother.max;
-    this.mother.dead=false;
     this.gateOpen=this.progress.run.cp>=2;
     this.metSpouse=this.gateOpen;
     this.companion=this.metSpouse?{x:3325,y:FLOOR,dir:-1,following:true}:null;
@@ -94,7 +97,12 @@ export class ThresholdGame extends Game {
   }
 
   getInteraction(){
-    if(this.crossing||this.bossActive)return null;
+    if(this.bossActive){
+      const duel=this.duel;
+      if(!duel||duel.aiDone||duel.playerDone||!duel.cheersLeft)return null;
+      return {kind:'cheer',label:this.canCheer?'응원!':'응원',disabled:!this.canCheer};
+    }
+    if(this.crossing)return null;
     const x=this.p.x+this.p.w/2;
     if(!this.gateOpen&&range(x,2910,GATE_X))return {kind:'wedge',label:'쐐기 밀기'};
     if(this.gateOpen&&range(x,3180,3390)&&this.p.ground)return {kind:'hand',label:'손 잡기'};
@@ -104,7 +112,12 @@ export class ThresholdGame extends Game {
   interact(){
     if(this.mode!=='playing')return;
     const choice=this.getInteraction()?.kind;
-    if(choice==='wedge'){
+    if(choice==='cheer'){
+      if(!this.canCheer)return;
+      this.duel.cheersLeft--;
+      this.duel.cheered=true;
+      this.notify('베짱이가 아빠 개미의 돌진에 반격합니다.');
+    }else if(choice==='wedge'){
       this.gateOpen=true;
       this.world.solids=this.world.solids.filter(s=>s.type!=='gate');
       this.notify('베짱이가 문을 받쳤어요.');
@@ -123,8 +136,6 @@ export class ThresholdGame extends Game {
 
   jump(){if(!this.crossing&&!this.duel?.playerDone)super.jump();}
   attack(){return !this.crossing&&(!this.duel||!this.duel.playerDone)&&super.attack();}
-  rememberBoss(){}
-  recordBossHit(){}
   onBossDefeated(){
     if(!this.duel||this.duel.playerDone)return;
     this.duel.playerDone=true;
@@ -141,14 +152,15 @@ export class ThresholdGame extends Game {
 
   onPlayerDefeat(){
     if(!this.duel){super.onPlayerDefeat();return;}
+    this.rememberBoss();
     this.spawn();
     this.p.x=stage.bossTrigger+8;
     this.p.dir=1;
     this.camera=Math.min(stage.width-WIDTH,this.p.x-370);
-    Object.assign(this.mother,makeMother());
+    Object.assign(this.mother,makeMother(),{hp:this.progress.run.bossHp});
     this.shots=[];
     this.save();
-    this.notify('엄마 개미에게 다시 도전하세요.');
+    this.notify('다시 도전! 엄마 개미는 '+this.mother.hp+'회 더 맞히면 돼요.');
   }
 
   updateCompanion(dt){
@@ -188,7 +200,14 @@ export class ThresholdGame extends Game {
 
   startDuel(){
     this.duel={playerDone:false,spouse:5,father:6,aiDone:false,
-      timer:0,round:0,spouseX:4590,fatherX:4980,strike:0,advantage:Math.random()<.5?'father':'spouse'};
+      timer:0,round:0,spouseX:4590,fatherX:4980,strike:0,advantage:Math.random()<.5?'father':'spouse',
+      cheersLeft:3,cheered:false};
+  }
+
+  get canCheer(){
+    const duel=this.duel;
+    return Boolean(duel&&!duel.aiDone&&!duel.playerDone&&duel.cheersLeft>0&&!duel.cheered
+      &&nextDuelAttacker(duel)==='father'&&range(duel.timer,...CHEER_WINDOW));
   }
 
   aiHit(source,target){
@@ -210,9 +229,9 @@ export class ThresholdGame extends Game {
       duel.spouseX=toward(duel.spouseX,charging?4770:4550,dt*230*Math.sqrt(pace));
       duel.fatherX=toward(duel.fatherX,charging?4870:5050,dt*210*Math.sqrt(pace));
       if(duel.timer>=1.9){
+        duel.attacker=duel.cheered?'spouse':nextDuelAttacker(duel);
         duel.round++;
-        const other=duel.advantage==='father'?'spouse':'father';
-        duel.attacker=duel.round%3===0?other:duel.advantage;
+        duel.cheered=false;
         this.aiHit(duel.attacker,duelPairs[duel.attacker]);
         duel.timer-=1.9;
         duel.strike=.28;

@@ -66,12 +66,19 @@ test('a player defeat retries the mother and keeps the father duel outcome',()=>
   assert.equal(game.aiHit('spouse','mother'),false);
   assert.equal(game.aiHit('father','player'),false);
   while(!game.duel.aiDone)game.aiHit('spouse','father');
-  game.mother.hp=4;
+  game.mother.hp=5;
+  game.shots.push({x:game.mother.x+30,y:game.mother.y-45,vx:660,left:100});
+  tick(game);
+  assert.equal(game.progress.run.bossHp,4);
   game.p.x=game.mother.x+20;
   game.p.hp=1;game.p.inv=0;
   tick(game);
   assert.equal(game.p.hp,game.maxHp);
-  assert.equal(game.mother.hp,game.mother.max);
+  assert.equal(game.mother.hp,4);
+  const reloaded=new ThresholdGame(JSON.parse(JSON.stringify(game.profile)));
+  reloaded.start(true);
+  assert.equal(reloaded.mother.hp,4);
+  assert.equal(reloaded.mother.max,12);
   assert.equal(game.duel.playerDone,false);
   assert.equal(game.duel.father,0);
   assert.equal(game.profile.journey.hits,1);
@@ -85,6 +92,32 @@ test('a player defeat retries the mother and keeps the father duel outcome',()=>
   tick(game,120);
   assert.equal(game.profile.bank,bank);
   assert.deepEqual(game.profile.endings,['ordinary']);
+});
+
+test('three timed cheers let the grasshopper beat the favored father without cross-lane damage',()=>{
+  const game=atFinale({...newJourney(),next:3});
+  game.duel.advantage='father';
+  game.p.inv=100;
+  const motherHp=game.mother.hp;
+  assert.equal(game.getInteraction().disabled,true);
+  game.interact();
+  assert.equal(game.duel.cheersLeft,3);
+  for(let i=0;i<1800&&!game.duel.aiDone;i++){
+    if(game.canCheer){
+      const previous=game.duel.cheersLeft;
+      game.interact();
+      game.interact();
+      assert.equal(game.duel.cheersLeft,previous-1);
+    }
+    tick(game);
+  }
+  assert.equal(game.duel.cheersLeft,0);
+  assert.equal(game.duel.father,0);
+  assert.ok(game.duel.spouse>0);
+  assert.equal(game.mother.hp,motherHp);
+  assert.equal(game.p.hp,game.maxHp);
+  defeatMother(game);
+  assert.equal(game.profile.journey.ending,'perfect');
 });
 
 test('elapsed time cannot award an ending while the mother is undefeated',()=>{
@@ -172,7 +205,8 @@ test('ending boundaries use the spouse result and cumulative deaths, and legacy 
   assert.equal(game.mode,'result');
   assert.equal(game.endingResult.id,null);
   assert.equal(game.profile.journey.ending,null);
-  assert.equal(cleanStage3({run:{cp:2,bossHp:1}}).run.bossHp,12);
+  assert.equal(cleanStage3({run:{cp:2,bossHp:1}}).run.bossHp,1);
+  assert.equal(cleanStage3({run:{cp:2}}).run.bossHp,12);
 });
 
 test('rendering the spouse at the laundry basket keeps the stage drawable', async () => {

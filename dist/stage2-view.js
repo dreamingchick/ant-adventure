@@ -1,4 +1,4 @@
-import { DRIPS, HAZARDS, dripPhase, dripHeight } from './stage2-engine.js?v=0.4.5';
+import { DRIPS, HAZARDS, dripPhase, dripHeight } from './stage2-engine.js?v=0.4.6';
 
 export function drawKitchenBackdrop(ctx, image, camera, width, height) {
   const light = ctx.createLinearGradient(0,0,0,height);

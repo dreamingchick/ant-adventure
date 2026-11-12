@@ -1,12 +1,12 @@
 import {initPwa} from './pwa.js';
 import {mountNameKeyboard} from './name-keyboard.js';
 import {mountViewport} from './viewport.js';
-import {Game,freshProfile,sanitize,WIDTH,HEIGHT,FLOOR,COSTS,LEVELS} from './engine.js?v=0.4.5';
-import {KitchenGame,cleanStage2} from './stage2-engine.js?v=0.4.5';
-import {drawKitchenBackdrop,drawKitchenDetails} from './stage2-view.js?v=0.4.5';
-import {ThresholdGame,cleanStage3} from './stage3-engine.js?v=0.4.5';
-import {drawThresholdBackdrop,drawThresholdDetails,drawBridalDress} from './stage3-view.js?v=0.4.5';
-import {ENDINGS,newJourney,restoreJourney} from './journey.js?v=0.4.5';
+import {Game,freshProfile,sanitize,WIDTH,HEIGHT,FLOOR,COSTS,LEVELS} from './engine.js?v=0.4.6';
+import {KitchenGame,cleanStage2} from './stage2-engine.js?v=0.4.6';
+import {drawKitchenBackdrop,drawKitchenDetails} from './stage2-view.js?v=0.4.6';
+import {ThresholdGame,cleanStage3} from './stage3-engine.js?v=0.4.6';
+import {drawThresholdBackdrop,drawThresholdDetails,drawBridalDress} from './stage3-view.js?v=0.4.6';
+import {ENDINGS,newJourney,restoreJourney} from './journey.js?v=0.4.6';
 import {createProfileStore} from './profile-store.js';
 const $=s=>document.querySelector(s),canvas=$('#game'),ctx=canvas.getContext('2d');
 const params=new URLSearchParams(location.search);
@@ -62,6 +62,7 @@ if(event.type==='boss-intro')dialog(thresholdChapter?[
   ['엄마 개미','이제야 돌아왔네. 네 이야기는 내가 직접 듣겠다!'],
   ['아빠 개미','베짱이, 넌 나하고 이야기 좀 하자.'],
   ['안내','엄마 개미를 쓰러뜨려야 엔딩으로 이어집니다. 베짱이의 승패와 누적 사망 횟수에 따라 결말이 달라집니다.'],
+  ['안내','위쪽에서 아빠 개미가 돌진할 때 응원 버튼이 켜집니다. X 또는 응원 버튼을 누르면 베짱이가 반격합니다. 한 대결에 3회까지 응원할 수 있어요.'],
 ]:kitchenChapter?[
   ['길목 경비','거실 문을 통과했다고? 여기서 한 번 더 멈춰!'],
   [profile.name,'난 개미굴로 가는 길을 찾고 있다고!'],
@@ -278,7 +279,7 @@ ctx.save();if(p.inv>0&&Math.floor(p.inv*12)%2)ctx.globalAlpha=.55;ellipse(p.x+p.
 for(const a of particles)ellipse(a.x,a.y,3*a.life,3*a.life,a.color);ctx.restore();
 // Foreground warmth and a fine vignette frame the miniature stage.
 const shade=ctx.createLinearGradient(0,620,0,720);shade.addColorStop(0,'#382d1800');shade.addColorStop(1,'#3a341655');ctx.fillStyle=shade;ctx.fillRect(0,620,1280,100);
-if(game.mode!=='menu'){const area=[...g.stage.areas].reverse().find(a=>p.x>=a.x)||g.stage.areas[0];$('#area-name').textContent=area.title;$('#hint').textContent=area.hint;$('#hearts').textContent='♥'.repeat(Math.max(0,p.hp))+'♡'.repeat(Math.max(0,game.maxHp-p.hp));$('#spit-fill').style.width=(p.spit/game.maxSpit*100)+'%';$('#sugar-count').textContent=profile.bank;$('#pending').textContent=game.pending.size?' +'+game.pending.size+' 미확정':'';$('#clock').textContent=time(game.elapsed);$('#route-fill').style.width=Math.min(100,p.x/g.stage.width*100)+'%';const interaction=game.getInteraction(),ib=$('#interact');ib.hidden=!interaction;if(interaction)ib.innerHTML=interaction.label+'<small>X</small>';const ab=$('[data-action="attack"]');ab.disabled=!!g.duel?.playerDone||!!p.climb||p.rope||p.spit<25;renderBossHud(g);}
+if(game.mode!=='menu'){const area=[...g.stage.areas].reverse().find(a=>p.x>=a.x)||g.stage.areas[0];$('#area-name').textContent=area.title;$('#hint').textContent=area.hint;$('#hearts').textContent='♥'.repeat(Math.max(0,p.hp))+'♡'.repeat(Math.max(0,game.maxHp-p.hp));$('#spit-fill').style.width=(p.spit/game.maxSpit*100)+'%';$('#sugar-count').textContent=profile.bank;$('#pending').textContent=game.pending.size?' +'+game.pending.size+' 미확정':'';$('#clock').textContent=time(game.elapsed);$('#route-fill').style.width=Math.min(100,p.x/g.stage.width*100)+'%';const interaction=game.getInteraction(),ib=$('#interact');ib.hidden=!interaction;ib.disabled=interaction?.disabled===true;if(interaction)ib.innerHTML=interaction.label+'<small>X</small>';const ab=$('[data-action="attack"]');ab.disabled=!!g.duel?.playerDone||!!p.climb||p.rope||p.spit<25;renderBossHud(g);}
 }
 function renderBossHud(g){
   const active=g.bossActive&&(g.mode==='playing'||g.mode==='dialog');
@@ -293,7 +294,11 @@ function renderBossHud(g){
   const bar=$('#boss-health');
   if(bar.max!==boss.max)bar.max=boss.max;
   if(bar.value!==boss.hp)bar.value=boss.hp;
-  const label=thresholdChapter&&g.duel?.playerDone?'베짱이 대결 마무리 중…':'남은 명중 '+boss.hp+'회 / '+boss.max+'회';
+  let label='남은 명중 '+boss.hp+'회 / '+boss.max+'회';
+  const duel=g.duel;
+  if(duel?.playerDone)label='엄마 개미 격파 · 베짱이 대결 마무리 중…';
+  else if(duel?.aiDone)label+=' · '+(duel.father===0?'베짱이 승리':'아빠 개미 승리');
+  else if(duel)label+=' · '+(g.canCheer?'지금 응원 X':'남은 응원')+' '+duel.cheersLeft+'회';
   if($('#boss-remaining').textContent!==label)$('#boss-remaining').textContent=label;
 }
 function loop(timestamp){const dt=last?Math.min(.25,(timestamp-last)/1000):.016;last=timestamp;let remaining=dt;while(remaining>0){const step=Math.min(1/60,remaining);game.update(step);remaining-=step;}for(const a of particles){a.x+=a.vx*dt;a.y+=a.vy*dt;a.vy+=100*dt;a.life-=dt;}particles=particles.filter(a=>a.life>0);if(game.mode==='playing'&&!profile.muted){musicTimer-=dt;if(musicTimer<=0){musicTimer=game.bossActive?.3:.43;const melody=game.bossActive?[146.8,174.6,220,196,146.8,164.8,196,220]:[261.6,329.6,392,440,392,329.6,293.7,329.6,261.6,220,261.6,293.7];tone(melody[note++%melody.length],.24,'sine',.018);}}render();frame=requestAnimationFrame(loop);}

@@ -1,9 +1,9 @@
 export const ENDINGS = {
-  ordinary: { title: '평범한 부부', caption: '두 곤충은 나란히 신혼집 문턱을 넘었다.' },
-  collar: { title: '베짱이 멱살을 잡고 들어가는 개미', caption: '“자, 들어가자.” 개미는 베짱이의 옷깃부터 잡았다.' },
-  drag: { title: '베짱이 다리를 잡고 끌고 들어가는 개미', caption: '머뭇거리던 베짱이는 개미에게 다리를 잡힌 채 들어갔다.' },
-  carry: { title: '개미를 업고 들어가는 베짱이', caption: '베짱이는 지친 개미를 업고 마지막 문턱을 넘었다.' },
-  perfect: { title: '현모양처 개미', caption: '개미는 베짱이의 옷매무새를 다듬고 두 손을 맞잡았다.' },
+  ordinary: { title: '평범한 부부', caption: '두 곤충은 나란히 신혼집 문턱을 넘었다.', art: 'assets/endings/ordinary.webp', alt: '웨딩드레스를 입은 개미와 턱시도를 입은 베짱이가 손을 잡고 나란히 걷는다.' },
+  collar: { title: '베짱이 멱살을 잡고 들어가는 개미', caption: '“자, 들어가자.” 개미는 베짱이의 옷깃부터 잡았다.', art: 'assets/endings/collar.webp', alt: '개미가 베짱이의 턱시도 옷깃을 잡아당기며 열린 문으로 향한다.' },
+  drag: { title: '베짱이 다리를 잡고 끌고 들어가는 개미', caption: '머뭇거리던 베짱이는 개미에게 다리를 잡힌 채 들어갔다.', art: 'assets/endings/drag.webp', alt: '개미가 길에 주저앉은 베짱이의 뒷다리를 잡고 문 쪽으로 끈다.' },
+  carry: { title: '개미를 업고 들어가는 베짱이', caption: '베짱이는 지친 개미를 업고 마지막 문턱을 넘었다.', art: 'assets/endings/carry.webp', alt: '턱시도를 입은 베짱이가 베일을 쓴 개미를 등에 업고 걷는다.' },
+  perfect: { title: '현모양처 개미', caption: '개미는 베짱이의 옷매무새를 다듬고 두 손을 맞잡았다.', art: 'assets/endings/perfect.webp', alt: '황금빛 문 앞에서 개미가 베짱이의 나비넥타이를 매만진다.' },
 };
 
 const count = value => Number.isSafeInteger(value) && value >= 0 ? value : 0;

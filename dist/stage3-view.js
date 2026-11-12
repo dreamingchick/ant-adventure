@@ -1,5 +1,5 @@
-import { FLOOR } from './engine.js?v=0.4.3';
-import { WINDS } from './stage3-engine.js?v=0.4.3';
+import { FLOOR } from './engine.js?v=0.4.4';
+import { WINDS } from './stage3-engine.js?v=0.4.4';
 
 function garment(ctx,fill,stroke,trace){
   ctx.beginPath();
@@ -155,45 +155,5 @@ export function drawThresholdDetails(ctx,g,{rr,ellipse,text,doorway,imageCell,im
     imageCell(images.ant,0,0,2,2,mother.x-17,mother.y-155,151,154,mother.dir<0);
     rr(mother.x+34,mother.y-101,30,9,4,'#b94f67');
     if(mother.state==='warn')text('돌진!',mother.x+58,mother.y-157,22,'#a54836','center');
-  }
-}
-
-export function drawWedding(canvas,images,id,seconds){
-  const ctx=canvas.getContext('2d');
-  const {width:w,height:h}=canvas;
-  const slide=Math.min(1,seconds/2.4);
-  ctx.clearRect(0,0,w,h);
-  const light=ctx.createLinearGradient(0,0,0,h);
-  light.addColorStop(0,'#e4d49d');light.addColorStop(1,'#927e55');
-  ctx.fillStyle=light;ctx.fillRect(0,0,w,h);
-  ctx.fillStyle='#555838';ctx.fillRect(0,187,w,63);
-  ctx.fillStyle='#7b613e';ctx.beginPath();ctx.roundRect(310,30,160,171,76);ctx.fill();
-  ctx.fillStyle='#4a4730';ctx.beginPath();ctx.roundRect(325,46,130,155,66);ctx.fill();
-  for(let i=0;i<24;i++){
-    ctx.fillStyle=i%2?'#fbebb5':'#e1a3a1';
-    ctx.fillRect(15+i*32,35+((i*37)%130)+4*Math.sin(seconds*2+i),6,4);
-  }
-  const draw=(image,col,row,outfit,x,y,width,height,flip=false,angle=0)=>{
-    if(!image.complete||!image.naturalWidth)return;
-    ctx.save();ctx.translate(x,y);ctx.rotate(angle);ctx.scale(flip?-1:1,1);
-    ctx.drawImage(image,col*image.naturalWidth/2,row*image.naturalHeight/2,image.naturalWidth/2,image.naturalHeight/2,-width/2,-height/2,width,height);
-    ctx.translate(-width/2,-height/2);ctx.scale(width/100,height/100);
-    outfit(ctx,col,row);
-    ctx.restore();
-  };
-  const ax=165+165*slide;
-  const gx=ax+103;
-  if(id==='carry'){
-    draw(images.grass,0,1,drawTuxedo,ax+80,140,130,129,true);
-    draw(images.ant,0,0,drawBridalDress,ax+37,104,85,88,false,-.27);
-  }else if(id==='drag'){
-    draw(images.grass,0,1,drawTuxedo,ax+33,175,117,105,true,-1.13);
-    draw(images.ant,0,0,drawBridalDress,ax+103,151,100,102);
-  }else{
-    draw(images.grass,0,1,drawTuxedo,gx-(id==='collar'?28:0),135,132,133,id!=='perfect',id==='collar'?-.2:0);
-    draw(images.ant,0,0,drawBridalDress,ax,151,105,106);
-    if(id==='perfect'){
-      ctx.fillStyle='#fff0c8';ctx.font='24px system-ui';ctx.fillText('♥',ax+48,93);
-    }
   }
 }

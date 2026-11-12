@@ -1,12 +1,12 @@
 import {initPwa} from './pwa.js';
 import {mountNameKeyboard} from './name-keyboard.js';
 import {mountViewport} from './viewport.js';
-import {Game,freshProfile,sanitize,WIDTH,HEIGHT,FLOOR,COSTS,LEVELS} from './engine.js?v=0.4.3';
-import {KitchenGame,cleanStage2} from './stage2-engine.js?v=0.4.3';
-import {drawKitchenBackdrop,drawKitchenDetails} from './stage2-view.js?v=0.4.3';
-import {ThresholdGame,cleanStage3} from './stage3-engine.js?v=0.4.3';
-import {drawThresholdBackdrop,drawThresholdDetails,drawWedding,drawBridalDress} from './stage3-view.js?v=0.4.3';
-import {ENDINGS,newJourney,restoreJourney} from './journey.js?v=0.4.3';
+import {Game,freshProfile,sanitize,WIDTH,HEIGHT,FLOOR,COSTS,LEVELS} from './engine.js?v=0.4.4';
+import {KitchenGame,cleanStage2} from './stage2-engine.js?v=0.4.4';
+import {drawKitchenBackdrop,drawKitchenDetails} from './stage2-view.js?v=0.4.4';
+import {ThresholdGame,cleanStage3} from './stage3-engine.js?v=0.4.4';
+import {drawThresholdBackdrop,drawThresholdDetails,drawBridalDress} from './stage3-view.js?v=0.4.4';
+import {ENDINGS,newJourney,restoreJourney} from './journey.js?v=0.4.4';
 import {createProfileStore} from './profile-store.js';
 const $=s=>document.querySelector(s),canvas=$('#game'),ctx=canvas.getContext('2d');
 const params=new URLSearchParams(location.search);
@@ -35,7 +35,6 @@ function canEnterChapter(chapter){
   const unlocked=chapter===2?profile.cleared:profile.chapter2?.cleared;
   return unlocked&&(!profile.journey?.tracked||profile.journey.next>=chapter);
 }
-let wedding=null,weddingStart=0;
 let toastTimer,dialogDone=()=>{},lines=[],lineIndex=0,helpReturn='menu',last=0,frame=0,particles=[],audio=null,musicTimer=0,note=0,saveWarning=false;
 const images={};for(const [key,path]of Object.entries({ant:'ant-original.webp',room:'living-room.webp',kitchen:'kitchen.webp',threshold:'threshold.webp',grass:'grasshoppers.webp'})){const im=new Image();im.src='assets/'+path;images[key]=im;}
 async function persist(){
@@ -164,15 +163,17 @@ function showEnding(ending,done,returnLabel='결과 보기 →'){
   clearInputs();
   for(const id of ['controls','hint','boss-hud','dialog','result'])$('#'+id).hidden=true;
   $('#toast').classList.remove('show');
-  wedding=ending.id;
-  weddingStart=performance.now();
-  $('#ending-title').textContent=ENDINGS[wedding].title;
-  $('#ending-caption').textContent=ENDINGS[wedding].caption;
+  const scene=ENDINGS[ending.id];
+  const artwork=$('#ending-art');
+  artwork.alt=scene.alt;
+  artwork.src=scene.art;
+  $('#ending-title').textContent=scene.title;
+  $('#ending-caption').textContent=scene.caption;
   const counts=$('#ending-counts');
   counts.hidden=ending.tracked===undefined;
   counts.textContent=ending.tracked?'사망 '+ending.deaths+'회 · 피격 '+ending.hits+'회':'이전 여정 · 누적 기록 미확인';
   $('#ending-results').textContent=returnLabel;
-  $('#ending-results').onclick=()=>{$('#ending').hidden=true;wedding=null;done();};
+  $('#ending-results').onclick=()=>{$('#ending').hidden=true;done();};
   $('#ending').hidden=false;
   $('#ending-title').focus();
 }
@@ -292,7 +293,7 @@ function renderBossHud(g){
   const label=thresholdChapter&&g.duel?.playerDone?'베짱이 대결 마무리 중…':'남은 명중 '+boss.hp+'회 / '+boss.max+'회';
   if($('#boss-remaining').textContent!==label)$('#boss-remaining').textContent=label;
 }
-function loop(timestamp){const dt=last?Math.min(.25,(timestamp-last)/1000):.016;last=timestamp;let remaining=dt;while(remaining>0){const step=Math.min(1/60,remaining);game.update(step);remaining-=step;}for(const a of particles){a.x+=a.vx*dt;a.y+=a.vy*dt;a.vy+=100*dt;a.life-=dt;}particles=particles.filter(a=>a.life>0);if(game.mode==='playing'&&!profile.muted){musicTimer-=dt;if(musicTimer<=0){musicTimer=game.bossActive?.3:.43;const melody=game.bossActive?[146.8,174.6,220,196,146.8,164.8,196,220]:[261.6,329.6,392,440,392,329.6,293.7,329.6,261.6,220,261.6,293.7];tone(melody[note++%melody.length],.24,'sine',.018);}}render();if(wedding&&!$('#ending').hidden)drawWedding($('#ending-art'),images,wedding,(timestamp-weddingStart)/1000);frame=requestAnimationFrame(loop);}
+function loop(timestamp){const dt=last?Math.min(.25,(timestamp-last)/1000):.016;last=timestamp;let remaining=dt;while(remaining>0){const step=Math.min(1/60,remaining);game.update(step);remaining-=step;}for(const a of particles){a.x+=a.vx*dt;a.y+=a.vy*dt;a.vy+=100*dt;a.life-=dt;}particles=particles.filter(a=>a.life>0);if(game.mode==='playing'&&!profile.muted){musicTimer-=dt;if(musicTimer<=0){musicTimer=game.bossActive?.3:.43;const melody=game.bossActive?[146.8,174.6,220,196,146.8,164.8,196,220]:[261.6,329.6,392,440,392,329.6,293.7,329.6,261.6,220,261.6,293.7];tone(melody[note++%melody.length],.24,'sine',.018);}}render();frame=requestAnimationFrame(loop);}
 addEventListener('blur',()=>{clearInputs();});document.addEventListener('visibilitychange',()=>{if(document.hidden&&game.mode==='playing')pause();});
 function beginBossReview(){
   showPlay();

@@ -1,12 +1,12 @@
 import {initPwa} from './pwa.js';
 import {mountNameKeyboard} from './name-keyboard.js';
 import {mountViewport} from './viewport.js';
-import {Game,freshProfile,sanitize,WIDTH,HEIGHT,FLOOR,COSTS,LEVELS} from './engine.js?v=1.0.3';
-import {KitchenGame,cleanStage2} from './stage2-engine.js?v=1.0.3';
-import {drawKitchenBackdrop,drawKitchenDetails} from './stage2-view.js?v=1.0.3';
-import {ThresholdGame,cleanStage3} from './stage3-engine.js?v=1.0.3';
-import {drawThresholdBackdrop,drawThresholdDetails,drawBridalDress} from './stage3-view.js?v=1.0.3';
-import {ENDINGS,newJourney,restoreJourney,unlockedEndings} from './journey.js?v=1.0.3';
+import {Game,freshProfile,sanitize,WIDTH,HEIGHT,FLOOR,COSTS,LEVELS} from './engine.js?v=1.0.4';
+import {KitchenGame,cleanStage2} from './stage2-engine.js?v=1.0.4';
+import {drawKitchenBackdrop,drawKitchenDetails} from './stage2-view.js?v=1.0.4';
+import {ThresholdGame,cleanStage3} from './stage3-engine.js?v=1.0.4';
+import {drawThresholdBackdrop,drawThresholdDetails,drawBridalDress} from './stage3-view.js?v=1.0.4';
+import {ENDINGS,newJourney,restoreJourney,unlockedEndings} from './journey.js?v=1.0.4';
 import {createProfileStore} from './profile-store.js';
 const $=s=>document.querySelector(s),canvas=$('#game'),ctx=canvas.getContext('2d');
 const params=new URLSearchParams(location.search);
@@ -58,16 +58,11 @@ const game=new GameType(profile,event=>{if(event.type==='save')persist();if(even
   ['베짱이','너, 길목에서 침 뱉고 튄 개미지?'],
   [profile.name,'튄 건 맞는데, 이번엔 네가 잡아 준 문으로 갈게.'],
 ],()=>{game.mode='playing';});
-if(event.type==='boss-intro')dialog(thresholdChapter?[
-  ['엄마 개미','이제야 돌아왔네. 네 이야기는 내가 직접 듣겠다!'],
-  ['아빠 개미','베짱이, 넌 나하고 이야기 좀 하자.'],
-  ['안내','엄마 개미를 쓰러뜨려야 엔딩으로 이어집니다. 베짱이의 승패와 누적 사망 횟수에 따라 결말이 달라집니다.'],
-  ['안내','아래쪽 발판에서 뛰어 엄마 개미를 넘으세요. 위쪽 대결은 베짱이가 맡습니다. 아빠 개미가 돌진할 때 응원 버튼이나 X를 3번 맞춰 누르면 베짱이가 승리할 수 있어요.'],
-]:kitchenChapter?[
-  ['길목 경비','거실 문을 통과했다고? 여기서 한 번 더 멈춰!'],
-  [profile.name,'난 개미굴로 가는 길을 찾고 있다고!'],
-  ['안내','침을 '+game.stage.bossHp+'번 맞히세요. 발판에서 뛰어 경비를 넘고, 착지 표시와 바닥 충격파를 피하세요.'],
-]:[['베짱이 대장','네가 우리 애들한테 침 뱉고 다닌다는 그 개미냐?'],[profile.name,'다닌다니. 나도 지금 길을 잃었거든.'],['베짱이 대장','이 문을 지나려면, 나부터 넘어 봐라!'],['안내','침 공격을 14번 명중시키면 승리합니다. 재도전해도 대장이 받은 피해는 유지됩니다.']],()=>{game.mode='playing';});if(event.type==='result'){
+if(event.type==='boss-intro'){
+  if(thresholdChapter)showBossPreparation();
+  else showBossIntro();
+}
+if(event.type==='result'){
   if(thresholdChapter){
     if(game.endingResult.id)showEnding(game.endingResult,()=>result(event));
     else result(event);
@@ -98,6 +93,30 @@ function start(resumeRun=false){
   else if(kitchenChapter)dialog([[profile.name,'문은 열렸고…… 저 실밥은 어디로 이어지지?']],()=>{game.mode='playing';});
   else if(!profile.cleared)dialog([[profile.name,'퉷! 챠챠, 여기까지 따라와 보시…… 어?'],[profile.name,'러그가 움직였잖아! ……우리 집이 어느 쪽이더라?'],[profile.name,'일단 오른쪽으로 가 보자. 작은 몸이라고 못 갈 곳은 없지!']],()=>{game.mode='playing';});
 }
+function showBossIntro(){
+  dialog(thresholdChapter?[
+  ['엄마 개미','이제야 돌아왔네. 네 이야기는 내가 직접 듣겠다!'],
+  ['아빠 개미','베짱이, 넌 나하고 이야기 좀 하자.'],
+  ['안내','엄마 개미를 쓰러뜨려야 엔딩으로 이어집니다. 베짱이의 승패와 누적 사망 횟수에 따라 결말이 달라집니다.'],
+  ['안내','아래쪽 발판에서 뛰어 엄마 개미를 넘으세요. 위쪽 대결은 베짱이가 맡습니다. 아빠 개미가 돌진할 때 응원 버튼이나 X를 3번 맞춰 누르면 베짱이가 승리할 수 있어요.'],
+]:kitchenChapter?[
+  ['길목 경비','거실 문을 통과했다고? 여기서 한 번 더 멈춰!'],
+  [profile.name,'난 개미굴로 가는 길을 찾고 있다고!'],
+  ['안내','침을 '+game.stage.bossHp+'번 맞히세요. 발판에서 뛰어 경비를 넘고, 착지 표시와 바닥 충격파를 피하세요.'],
+]:[['베짱이 대장','네가 우리 애들한테 침 뱉고 다닌다는 그 개미냐?'],[profile.name,'다닌다니. 나도 지금 길을 잃었거든.'],['베짱이 대장','이 문을 지나려면, 나부터 넘어 봐라!'],['안내','침 공격을 14번 명중시키면 승리합니다. 재도전해도 대장이 받은 피해는 유지됩니다.']],()=>{game.mode='playing';});
+}
+function showBossPreparation(){
+  game.prepareFinale();
+  clearInputs();
+  $('#upgrade-message').textContent='보유 설탕 '+profile.bank+'개';
+  renderUpgrades();
+  $('#boss-preparation').hidden=false;
+  $('#boss-preparation-title').focus();
+}
+$('#boss-preparation-start').onclick=()=>{
+  $('#boss-preparation').hidden=true;
+  showBossIntro();
+};
 function dialog(items,done){game.mode='dialog';clearInputs();lines=items;lineIndex=0;dialogDone=done;$('#dialog').hidden=false;renderDialog();}
 function renderDialog(){$('#speaker').textContent=lines[lineIndex][0];$('#dialog-text').textContent=lines[lineIndex][1];$('#dialog-next').textContent=lineIndex===lines.length-1?(kitchenChapter&&game.progress.cleared&&!game.progress.run?'결과 보기 →':'출발! →'):'계속 →';}
 function nextDialog(){lineIndex++;if(lineIndex>=lines.length){$('#dialog').hidden=true;clearInputs();dialogDone();}else renderDialog();}
@@ -178,8 +197,11 @@ function showEnding(ending,done,returnLabel='결과 보기 →'){
 }
 function result(event){clearInputs();$('#result').hidden=false;$('#controls').hidden=true;$('#hint').hidden=true;$('#boss-hud').hidden=true;$('#result-time').textContent=time(event.elapsed);$('#result-sugar').textContent=event.sugar+'개';$('#result-best').textContent=time(game.progress.best||event.elapsed);$('#chapter-03').hidden=!kitchenChapter||!canEnterChapter(3);
 $('#chapter-02').hidden=kitchenChapter||thresholdChapter||!canEnterChapter(2);
-if(thresholdChapter)$('#result .ending-note').hidden=Boolean(game.endingResult.id);
-$('#upgrade-message').textContent=(kitchenChapter||thresholdChapter)?'쉼터와 출구에서 확정한 설탕으로 강화할 수 있어요.':event.bonus?'대장 최초 처치 보상 +'+event.bonus+'개':'최초 보상은 이미 받았어요. 일반 설탕은 다시 수집할 수 있어요.';renderUpgrades();}
+if(thresholdChapter){
+  $('#result .ending-note').hidden=Boolean(game.endingResult.id);
+  return;
+}
+$('#upgrade-message').textContent=kitchenChapter?'쉼터와 출구에서 확정한 설탕으로 강화할 수 있어요.':event.bonus?'대장 최초 처치 보상 +'+event.bonus+'개':'최초 보상은 이미 받았어요. 일반 설탕은 다시 수집할 수 있어요.';renderUpgrades();}
 function renderUpgrades(){const names={health:'튼튼한 몸',spit:'넉넉한 침',regen:'빠른 침 회복'};$('#upgrades').replaceChildren();for(const k of Object.keys(names)){const l=profile.levels[k],row=document.createElement('div');row.className='upgrade-row';const desc=document.createElement('div'),title=document.createElement('strong'),sub=document.createElement('small'),b=document.createElement('button');title.textContent=names[k]+' '+l+'/3';const current=LEVELS[k][l];sub.textContent=k==='health'?'최대 하트 '+current+'개':k==='spit'?'침 게이지 '+current:'초당 '+current+' 회복';desc.append(title,sub);b.textContent=l===3?'강화 완료':'◇ '+COSTS[l]+' 강화';b.disabled=l===3||profile.bank<COSTS[l];b.onclick=()=>{if(game.upgrade(k)){$('#upgrade-message').textContent=names[k]+' 강화 완료 · 보유 설탕 '+profile.bank+'개';renderUpgrades();}};row.append(desc,b);$('#upgrades').append(row);}}
 function time(value){const sec=Math.floor(value);return String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0');}
 function rr(x,y,w,h,r,fill,stroke){ctx.beginPath();ctx.roundRect(x,y,w,h,r);if(fill){ctx.fillStyle=fill;ctx.fill();}if(stroke){ctx.strokeStyle=stroke;ctx.stroke();}}
@@ -318,6 +340,7 @@ if(thresholdChapter){
   $('#result h2').textContent='개미굴에 돌아왔어요.';
   $('#result .result-panel > p').textContent='바람이 잦아들고, 개미와 베짱이는 함께 문턱을 넘었습니다.';
   $('#replay').hidden=true;
+  $('#boss-preparation-start').before($('#upgrades'),$('#upgrade-message'));
   $('#result .ending-note').textContent='새 여정을 시작해 챕터 1부터 사망 횟수를 기록하면 엔딩을 해금할 수 있어요.';
   if(review==='finale')beginBossReview();
   else if(canEnterChapter(3))start(Boolean(game.progress.run));

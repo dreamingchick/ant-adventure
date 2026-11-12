@@ -1,4 +1,4 @@
-import { Game, makeEnemy, FLOOR } from './engine.js?v=1.0.3';
+import { Game, makeEnemy, FLOOR } from './engine.js?v=1.0.4';
 
 export const KITCHEN_WIDTH = 6450;
 export const KITCHEN_CHECKPOINTS = [

@@ -1,4 +1,4 @@
-import { advanceJourney, newJourney, recordDamage, unlockedEndings } from './journey.js?v=1.0.3';
+import { advanceJourney, newJourney, recordDamage, unlockedEndings } from './journey.js?v=1.0.4';
 export const WIDTH=1280,HEIGHT=720,WORLD=7900,FLOOR=590;
 const ARENA_WALL_WIDTH=20;
 export const LEVELS={health:[3,4,5,6],spit:[100,125,150,175],regen:[25,30,35,40]};
@@ -91,7 +91,8 @@ onBossDefeated(){
   this.notify('경비가 길을 비켰어요. 오른쪽 문턱으로 가세요.');
 }
 finish(ending){if(this.mode!=='playing')return;this.commit();let bonus=0;if(!this.progress.bossReward){bonus=this.stage.bossReward;this.profile.bank+=bonus;this.progress.bossReward=bonus>0;}const gathered=this.progress.run.attemptSugar+bonus;this.progress.cleared=true;if(!this.progress.best||this.elapsed<this.progress.best){this.progress.best=this.elapsed;this.progress.bestLevels={...this.profile.levels};}this.progress.run=null;this.mode='result';this.bossActive=false;advanceJourney(this.profile,this.stage.chapter,ending);this.save();this.sound('win');this.emit({type:'result',elapsed:this.elapsed,sugar:gathered,bonus});}
-upgrade(key){if(this.mode!=='result'||!this.progress.cleared||!(key in this.profile.levels))return false;const level=this.profile.levels[key];if(level>=3||this.profile.bank<COSTS[level])return false;this.profile.bank-=COSTS[level];this.profile.levels[key]++;this.save();this.sound('checkpoint');return true;}
+canUpgrade(){return this.mode==='result'&&this.progress.cleared;}
+upgrade(key){if(!this.canUpgrade()||!Object.hasOwn(this.profile.levels,key))return false;const level=this.profile.levels[key];if(level>=3||this.profile.bank<COSTS[level])return false;this.profile.bank-=COSTS[level];this.profile.levels[key]++;this.save();this.sound('checkpoint');return true;}
 update(dt){if(this.mode!=='playing')return;dt=Math.min(.033,dt);this.time+=dt;this.elapsed+=dt;const p=this.p;this.detachLock=Math.max(0,(this.detachLock||0)-dt);p.inv=Math.max(0,p.inv-dt);p.shotTimer=Math.max(0,p.shotTimer-dt);p.firePose=Math.max(0,p.firePose-dt);p.regenWait=Math.max(0,p.regenWait-dt);p.jumpBuffer=Math.max(0,p.jumpBuffer-dt);if(!p.regenWait)p.spit=Math.min(this.maxSpit,p.spit+this.regen*dt);const dir=(this.input.right?1:0)-(this.input.left?1:0);if(dir)p.dir=dir;
 const r=this.world.rope;if(!p.rope&&this.stage.ropeRest!==undefined){r.angle=this.stage.ropeRest;r.velocity=0;}else{r.velocity+=(-Math.sin(r.angle)*2+(p.rope?dir*2.8:0))*dt;r.velocity*=Math.exp(-.25*dt);r.angle+=r.velocity*dt;r.angle=Math.max(-.85,Math.min(.85,r.angle));if(Math.abs(r.angle)>=.85)r.velocity*=-.6;}
 if(p.climb){p.climbTime+=dt;p.pathT=Math.max(0,Math.min(this.pathLength(p.climb),p.pathT+dir*145*dt));const q=this.pointOn(p.climb,p.pathT);p.x=q.x-p.w/2;p.y=q.y-p.h/2;p.vx=0;p.vy=0;if(p.climb.slip&&p.climbTime>2.6){p.climb=null;this.detachLock=1.5;p.vy=100;this.notify('미끄러워! 점프로 빠져나가세요.');}}
@@ -100,7 +101,7 @@ else{p.coyote=p.ground?.1:Math.max(0,p.coyote-dt);this.tryJump();p.vx=this.moveS
 for(const item of this.world.sugar)if(!this.collected.has(item.id)&&!this.pending.has(item.id)&&Math.hypot(p.x+p.w/2-item.x,p.y+p.h/2-item.y)<46){this.pending.add(item.id);this.sound('sugar');this.emit({type:'spark',x:item.x,y:item.y});}
 for(const item of this.world.heal)if(!this.healTaken.has(item.id)&&p.hp<this.maxHp&&Math.hypot(p.x+p.w/2-item.x,p.y+p.h/2-item.y)<45){p.hp++;this.healTaken.add(item.id);this.sound('heal');this.notify('꿀방울 · 하트 +1');}
 for(let i=1;i<this.stage.checkpoints.length;i++)if(i>this.cp&&p.x>=this.stage.checkpoints[i].x&&p.ground)this.checkpoint(i);
-if(p.x>this.stage.bossTrigger&&!this.bossIntro&&!this.enemies.find(e=>e.boss).dead){this.bossIntro=true;this.arena=true;this.bossActive=true;this.emit({type:'boss-intro'});}
+if(p.x>this.stage.bossTrigger&&!this.bossIntro&&!this.enemies.find(e=>e.boss).dead){this.bossIntro=true;this.arena=true;this.bossActive=true;this.emit({type:'boss-intro'});if(this.mode!=='playing')return;}
 this.updateEnemies(dt);this.updateProjectiles(dt);this.updateHazards(dt);
 if(this.stage.exitRequired&&p.x>=this.stage.exitRequired&&this.enemies.find(e=>e.boss).dead)this.finish();
 this.camera+=(Math.max(0,Math.min(this.stage.width-WIDTH,p.x-380))-this.camera)*Math.min(1,dt*6);

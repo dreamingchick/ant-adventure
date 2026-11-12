@@ -20,6 +20,44 @@ const defeatMother=game=>{
   tick(game);
 };
 
+test('chapter 3 confirms sugar and permits upgrades only before the finale',()=>{
+  const profile={...freshProfile(),bank:39,journey:{...newJourney(),next:3}};
+  const game=new ThresholdGame(profile,event=>{
+    if(event.type==='boss-intro')game.prepareFinale();
+  });
+  game.start();
+  game.checkpoint(2);
+  game.pending.add('s0');
+  game.pending.add('s1');
+  game.p.hp=2;
+  game.p.spit=50;
+  game.p.regenWait=1;
+  assert.equal(game.upgrade('health'),false);
+  game.p.x=game.stage.bossTrigger+8;
+  tick(game);
+  assert.equal(game.mode,'preparation');
+  assert.equal(profile.bank,41);
+  assert.deepEqual(game.progress.run.collected,['s0','s1']);
+  assert.equal(game.progress.run.attemptSugar,2);
+  const clock=game.elapsed;
+  tick(game,120);
+  assert.equal(game.elapsed,clock);
+  assert.equal(game.duel.timer,0);
+  assert.equal(game.upgrade('health'),true);
+  assert.equal(game.upgrade('spit'),true);
+  assert.equal(game.p.hp,3);
+  assert.equal(game.p.spit,75);
+  assert.equal(profile.bank,1);
+  assert.equal(game.upgrade('regen'),false);
+
+  game.mode='playing';
+  defeatMother(game);
+  tick(game,180);
+  assert.equal(game.mode,'result');
+  profile.bank=100;
+  assert.equal(game.upgrade('regen'),false);
+});
+
 test('chapter 3 route reaches both shelters, opens the gate and finishes by either crossing',()=>{
   for(const takeHand of [true,false]){
     const game=new ThresholdGame({...freshProfile(),journey:{...newJourney(),next:3}});

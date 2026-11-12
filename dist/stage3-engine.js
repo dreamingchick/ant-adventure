@@ -1,5 +1,5 @@
-import { Game, makeEnemy, FLOOR, WIDTH } from './engine.js?v=1.0.3';
-import { endingFor } from './journey.js?v=1.0.3';
+import { Game, makeEnemy, FLOOR, WIDTH } from './engine.js?v=1.0.4';
+import { endingFor } from './journey.js?v=1.0.4';
 
 export const WINDS = [
   { from: 730, to: 1160, safe: [875, 985], force: -145 },
@@ -80,6 +80,23 @@ export class ThresholdGame extends Game {
   }
 
   get progress(){return this.profile.chapter3;}
+  canUpgrade(){return this.mode==='preparation';}
+
+  prepareFinale(){
+    if(this.mode!=='playing'||!this.bossActive)return;
+    this.mode='preparation';
+    this.commit();
+    this.save();
+  }
+
+  upgrade(key){
+    const hp=this.maxHp, spit=this.maxSpit;
+    if(!super.upgrade(key))return false;
+    this.p.hp+=this.maxHp-hp;
+    this.p.spit+=this.maxSpit-spit;
+    return true;
+  }
+
   get wind(){return windPhase(this.time);}
   get mother(){return this.enemies.find(enemy=>enemy.id==='mother');}
   get companionPose(){

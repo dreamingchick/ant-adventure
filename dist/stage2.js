@@ -41,6 +41,6 @@ function draw(){const t=g.elapsed;ctx.clearRect(0,0,W,H);const sky=ctx.createLin
  for(const e of g.enemies){if(e.dead)continue;const row=e.kind==='thin'?0:e.kind==='fat'?0:1,col=e.kind==='thin'?1:0;cell(grass,col,row,2,2,e.x-15,FLOOR-e.h-30,e.w+30,e.h+36,e.direction>0);ctx.fillStyle='#40543f';ctx.fillRect(e.x,FLOOR-e.h-13,e.w,7);ctx.fillStyle='#cce98d';ctx.fillRect(e.x,FLOOR-e.h-13,e.w*e.hp/e.maxHp,7);}
  for(const s of g.shots){ctx.fillStyle='#e7fff0';ctx.beginPath();ctx.ellipse(s.x,s.y,9,6,0,0,Math.PI*2);ctx.fill();}
  const p=g.p;if(p.inv>0&&Math.floor(p.inv*12)%2)ctx.globalAlpha=.45;cell(ant,p.shotCooldown>.26?1:0,Math.abs(p.vx)>10?Math.floor(t*10)%2:0,2,2,p.x-28,p.y-30,94,98,p.dir<0);ctx.globalAlpha=1;ctx.restore();
- $('#hearts').textContent='♥'.repeat(Math.max(0,p.hp))+'♡'.repeat(Math.max(0,3-p.hp));$('#clock').textContent=format(g.elapsed);
+ $('#hearts').textContent='♥'.repeat(Math.max(0,p.hp))+'♡'.repeat(Math.max(0,3-p.hp));$('#spit-fill').style.width=(100*Math.max(0,1-p.shotCooldown/.48))+'%';$('#clock').textContent=format(g.elapsed);
 }
 function loop(now){const dt=last?Math.min(.05,(now-last)/1000):.016;last=now;g.tick(dt);draw();requestAnimationFrame(loop);}requestAnimationFrame(loop);

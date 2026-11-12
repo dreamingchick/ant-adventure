@@ -1,12 +1,12 @@
 import {initPwa} from './pwa.js';
 import {mountNameKeyboard} from './name-keyboard.js';
 import {mountViewport} from './viewport.js';
-import {Game,freshProfile,sanitize,WIDTH,HEIGHT,FLOOR,COSTS,LEVELS} from './engine.js?v=0.4.4';
-import {KitchenGame,cleanStage2} from './stage2-engine.js?v=0.4.4';
-import {drawKitchenBackdrop,drawKitchenDetails} from './stage2-view.js?v=0.4.4';
-import {ThresholdGame,cleanStage3} from './stage3-engine.js?v=0.4.4';
-import {drawThresholdBackdrop,drawThresholdDetails,drawBridalDress} from './stage3-view.js?v=0.4.4';
-import {ENDINGS,newJourney,restoreJourney} from './journey.js?v=0.4.4';
+import {Game,freshProfile,sanitize,WIDTH,HEIGHT,FLOOR,COSTS,LEVELS} from './engine.js?v=0.4.5';
+import {KitchenGame,cleanStage2} from './stage2-engine.js?v=0.4.5';
+import {drawKitchenBackdrop,drawKitchenDetails} from './stage2-view.js?v=0.4.5';
+import {ThresholdGame,cleanStage3} from './stage3-engine.js?v=0.4.5';
+import {drawThresholdBackdrop,drawThresholdDetails,drawBridalDress} from './stage3-view.js?v=0.4.5';
+import {ENDINGS,newJourney,restoreJourney} from './journey.js?v=0.4.5';
 import {createProfileStore} from './profile-store.js';
 const $=s=>document.querySelector(s),canvas=$('#game'),ctx=canvas.getContext('2d');
 const params=new URLSearchParams(location.search);
@@ -29,7 +29,8 @@ if(review==='kitchen'||review==='boss2')profile.cleared=true;
 if(review==='threshold'||review==='finale'){
   profile.cleared=true;
   profile.chapter2={...profile.chapter2,cleared:true};
-  if(!profile.journey||profile.journey.ending)profile.journey={...newJourney(),tracked:false,next:3};
+  if(profile.journey?.next===3&&!profile.journey.ending)profile.journey.tracked=true;
+  else profile.journey={...newJourney(),next:3};
 }
 function canEnterChapter(chapter){
   const unlocked=chapter===2?profile.cleared:profile.chapter2?.cleared;
@@ -60,14 +61,15 @@ const game=new GameType(profile,event=>{if(event.type==='save')persist();if(even
 if(event.type==='boss-intro')dialog(thresholdChapter?[
   ['엄마 개미','이제야 돌아왔네. 네 이야기는 내가 직접 듣겠다!'],
   ['아빠 개미','베짱이, 넌 나하고 이야기 좀 하자.'],
-  ['안내','개미는 엄마와, 베짱이는 아빠와 대결합니다. 두 대결이 끝나면 결말로 이어집니다.'],
+  ['안내','엄마 개미를 쓰러뜨려야 엔딩으로 이어집니다. 베짱이의 승패와 누적 사망 횟수에 따라 결말이 달라집니다.'],
 ]:kitchenChapter?[
   ['길목 경비','거실 문을 통과했다고? 여기서 한 번 더 멈춰!'],
   [profile.name,'난 개미굴로 가는 길을 찾고 있다고!'],
   ['안내','침을 '+game.stage.bossHp+'번 맞히세요. 착지 표시에서 벗어나고 바닥 충격파는 점프로 넘으세요.'],
 ]:[['베짱이 대장','네가 우리 애들한테 침 뱉고 다닌다는 그 개미냐?'],[profile.name,'다닌다니. 나도 지금 길을 잃었거든.'],['베짱이 대장','이 문을 지나려면, 나부터 넘어 봐라!'],['안내','침 공격을 14번 명중시키면 승리합니다. 재도전해도 대장이 받은 피해는 유지됩니다.']],()=>{game.mode='playing';});if(event.type==='result'){
   if(thresholdChapter){
-    showEnding(game.endingResult,()=>result(event));
+    if(game.endingResult.id)showEnding(game.endingResult,()=>result(event));
+    else result(event);
   }else if(kitchenChapter){
     clearInputs();
     $('#controls').hidden=true;
@@ -179,6 +181,7 @@ function showEnding(ending,done,returnLabel='결과 보기 →'){
 }
 function result(event){clearInputs();$('#result').hidden=false;$('#controls').hidden=true;$('#hint').hidden=true;$('#boss-hud').hidden=true;$('#result-time').textContent=time(event.elapsed);$('#result-sugar').textContent=event.sugar+'개';$('#result-best').textContent=time(game.progress.best||event.elapsed);$('#chapter-03').hidden=!kitchenChapter||!canEnterChapter(3);
 $('#chapter-02').hidden=kitchenChapter||thresholdChapter||!canEnterChapter(2);
+if(thresholdChapter)$('#result .ending-note').hidden=Boolean(game.endingResult.id);
 $('#upgrade-message').textContent=(kitchenChapter||thresholdChapter)?'쉼터와 출구에서 확정한 설탕으로 강화할 수 있어요.':event.bonus?'대장 최초 처치 보상 +'+event.bonus+'개':'최초 보상은 이미 받았어요. 일반 설탕은 다시 수집할 수 있어요.';renderUpgrades();}
 function renderUpgrades(){const names={health:'튼튼한 몸',spit:'넉넉한 침',regen:'빠른 침 회복'};$('#upgrades').replaceChildren();for(const k of Object.keys(names)){const l=profile.levels[k],row=document.createElement('div');row.className='upgrade-row';const desc=document.createElement('div'),title=document.createElement('strong'),sub=document.createElement('small'),b=document.createElement('button');title.textContent=names[k]+' '+l+'/3';const current=LEVELS[k][l];sub.textContent=k==='health'?'최대 하트 '+current+'개':k==='spit'?'침 게이지 '+current:'초당 '+current+' 회복';desc.append(title,sub);b.textContent=l===3?'강화 완료':'◇ '+COSTS[l]+' 강화';b.disabled=l===3||profile.bank<COSTS[l];b.onclick=()=>{if(game.upgrade(k)){$('#upgrade-message').textContent=names[k]+' 강화 완료 · 보유 설탕 '+profile.bank+'개';renderUpgrades();}};row.append(desc,b);$('#upgrades').append(row);}}
 function time(value){const sec=Math.floor(value);return String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0');}
@@ -271,7 +274,7 @@ for(const wave of g.guardWaves??[]){
 }
 for(const s of g.shots){ellipse(s.x-s.vx*.008,s.y,13,4,'#ebfbef99');ellipse(s.x,s.y,8,7,'#bfe7d9');ellipse(s.x-2,s.y-2,3,2,'#fff');}for(const s of g.seeds){ellipse(s.x,s.y,9,5,'#83613c');}
 // Exact original ant sprite sheet from Chacha, let's wash.
-ctx.save();if(p.inv>0&&Math.floor(p.inv*12)%2)ctx.globalAlpha=.55;ellipse(p.x+p.w/2,p.y+p.h+2,34,7,'#4d443333');let col=0,row=0;if(p.firePose>0)col=1;else if(Math.abs(p.vx)>20||p.climb&&((g.input.left||g.input.right))){row=1;col=Math.floor(t*9)%2;}const pose=g.antPose();if(p.hp===0&&g.duel?.playerDone)pose.rotation=-.3*p.dir;imageCell(images.ant,col,row,2,2,p.x+p.w/2-49,p.y-34,98,101,pose.flip,pose.rotation,g.metSpouse?drawBridalDress:undefined);if(p.firePose>0)text('퉷!',p.x+p.w/2+p.dir*47,p.y-10,18,'#fff8dd','center');ctx.restore();
+ctx.save();if(p.inv>0&&Math.floor(p.inv*12)%2)ctx.globalAlpha=.55;ellipse(p.x+p.w/2,p.y+p.h+2,34,7,'#4d443333');let col=0,row=0;if(p.firePose>0)col=1;else if(Math.abs(p.vx)>20||p.climb&&((g.input.left||g.input.right))){row=1;col=Math.floor(t*9)%2;}const pose=g.antPose();imageCell(images.ant,col,row,2,2,p.x+p.w/2-49,p.y-34,98,101,pose.flip,pose.rotation,g.metSpouse?drawBridalDress:undefined);if(p.firePose>0)text('퉷!',p.x+p.w/2+p.dir*47,p.y-10,18,'#fff8dd','center');ctx.restore();
 for(const a of particles)ellipse(a.x,a.y,3*a.life,3*a.life,a.color);ctx.restore();
 // Foreground warmth and a fine vignette frame the miniature stage.
 const shade=ctx.createLinearGradient(0,620,0,720);shade.addColorStop(0,'#382d1800');shade.addColorStop(1,'#3a341655');ctx.fillStyle=shade;ctx.fillRect(0,620,1280,100);
@@ -313,7 +316,7 @@ if(thresholdChapter){
   $('#result h2').textContent='개미굴에 돌아왔어요.';
   $('#result .result-panel > p').textContent='바람이 잦아들고, 개미와 베짱이는 함께 문턱을 넘었습니다.';
   $('#replay').hidden=true;
-  $('#result .ending-note').hidden=true;
+  $('#result .ending-note').textContent='새 여정을 시작해 챕터 1부터 사망 횟수를 기록하면 엔딩을 해금할 수 있어요.';
   if(review==='finale')beginBossReview();
   else if(canEnterChapter(3))start(Boolean(game.progress.run));
   else {

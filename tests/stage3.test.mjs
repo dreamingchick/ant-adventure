@@ -14,6 +14,11 @@ const atFinale=journey=>{
   tick(game);
   return game;
 };
+const defeatMother=game=>{
+  game.mother.hp=1;
+  game.shots.push({x:game.mother.x+30,y:game.mother.y-45,vx:660,left:100});
+  tick(game);
+};
 
 test('chapter 3 route reaches both shelters, opens the gate and finishes by either crossing',()=>{
   for(const takeHand of [true,false]){
@@ -47,63 +52,65 @@ test('chapter 3 route reaches both shelters, opens the gate and finishes by eith
     }
     move(4380);
     assert.ok(game.duel);
-    tick(game,60*30);
+    defeatMother(game);
+    tick(game,60*3);
     assert.equal(game.mode,'result');
     assert.equal(game.progress.cleared,true);
   }
 });
 
-test('duels are isolated and both player defeat and AI defeat allow the ending',()=>{
+test('a player defeat retries the mother and keeps the father duel outcome',()=>{
   for(const [source,target] of [['player','father'],['father','player'],['spouse','mother'],['mother','spouse']])
     assert.equal(canDuelHit(source,target),false);
   const game=atFinale({...newJourney(),next:3});
   assert.equal(game.aiHit('spouse','mother'),false);
   assert.equal(game.aiHit('father','player'),false);
-  game.p.hp=1;game.p.inv=0;game.hurt();
-  assert.equal(game.duel.playerDone,true);
+  while(!game.duel.aiDone)game.aiHit('spouse','father');
+  game.mother.hp=4;
+  game.p.x=game.mother.x+20;
+  game.p.hp=1;game.p.inv=0;
+  tick(game);
+  assert.equal(game.p.hp,game.maxHp);
+  assert.equal(game.mother.hp,game.mother.max);
+  assert.equal(game.duel.playerDone,false);
+  assert.equal(game.duel.father,0);
   assert.equal(game.profile.journey.hits,1);
   assert.equal(game.profile.journey.deaths,1);
   assert.equal(game.progress.cleared,false);
-  for(let i=0;i<5;i++)game.aiHit('father','spouse');
-  tick(game);
-  assert.equal(game.profile.journey.ending,'drag');
+  assert.equal(game.mode,'playing');
+  defeatMother(game);
+  assert.equal(game.profile.journey.ending,'ordinary');
   assert.equal(game.progress.cleared,true);
   const bank=game.profile.bank;
   tick(game,120);
   assert.equal(game.profile.bank,bank);
-  assert.deepEqual(game.profile.endings,['drag']);
+  assert.deepEqual(game.profile.endings,['ordinary']);
 });
 
-test('a clean timed finish counts as perfect regardless of the AI duel result',()=>{
-  for(const winner of ['father','spouse']){
-    const game=atFinale({...newJourney(),next:3});
-    const target=winner==='father'?'spouse':'father';
-    while(!game.duel.aiDone)game.aiHit(winner,target);
-    game.duel.elapsed=28;
-    game.updateDuel(1/60);
-    assert.equal(game.profile.journey.ending,'perfect');
-  }
+test('elapsed time cannot award an ending while the mother is undefeated',()=>{
+  const game=atFinale({...newJourney(),next:3});
+  game.duel.advantage='spouse';
+  game.p.inv=100;
+  tick(game,60*30);
+  assert.equal(game.duel.father,0);
+  assert.equal(game.duel.playerDone,false);
+  assert.equal(game.mode,'playing');
+  assert.equal(game.progress.cleared,false);
+  defeatMother(game);
+  assert.equal(game.profile.journey.ending,'perfect');
 });
 
-test('an early defeat while touching the mother settles both duels and opens the ending within three seconds',()=>{
-  for(const advantage of ['father','spouse']){
-    const game=atFinale({...newJourney(),next:3});
-    const events=[];
-    game.emit=event=>events.push(event);
+test('a mother victory lets the upper duel settle within three seconds, then chooses the matching ending',()=>{
+  for(const [advantage,id] of [['father','collar'],['spouse','perfect']]){
+    const game=atFinale({...newJourney(),next:3,hits:9});
     game.duel.advantage=advantage;
-    game.p.x=game.mother.x+20;
-    game.p.hp=1;
-    game.p.inv=0;
-    tick(game);
-    assert.equal(game.p.hp,0);
+    defeatMother(game);
     assert.equal(game.duel.playerDone,true);
-    tick(game,30);
-    assert.ok(game.mother.x>=game.p.x+game.p.w);
-    tick(game,150);
+    assert.equal(game.mode,'playing');
+    tick(game,180);
     assert.equal(game.mode,'result');
-    assert.equal(game.profile.journey.deaths,1);
-    assert.equal(game.duel[advantage==='father'?'spouse':'father'],0);
-    assert.equal(events.filter(event=>event.type==='result').length,1);
+    assert.equal(game.profile.journey.ending,id);
+    assert.deepEqual(game.profile.endings,[id]);
   }
 });
 
@@ -148,17 +155,23 @@ test('journey counts carry between chapters, ignore invulnerability and survive 
   kitchen.finish();
   const raw=JSON.parse(JSON.stringify(profile));
   assert.deepEqual(restoreJourney(raw,profile),{tracked:true,next:3,hits:2,deaths:1,ending:null});
-  assert.equal(endingFor(raw.journey),'drag');
+  assert.equal(endingFor(raw.journey,false),'drag');
 });
 
-test('ending boundaries and untracked legacy saves do not grant a perfect result',()=>{
-  const base={...newJourney(),next:3};
-  for(const [hits,deaths,id] of [[0,0,'perfect'],[1,0,'ordinary'],[5,0,'ordinary'],[6,0,'collar'],[4,1,'drag'],[8,2,'drag'],[9,3,'carry']])
-    assert.equal(endingFor({...base,hits,deaths}),id);
+test('ending boundaries use the spouse result and cumulative deaths, and legacy records cannot earn an ending',()=>{
+  const base={...newJourney(),next:3,hits:12};
+  for(const [spouseWon,deaths,id] of [[true,0,'perfect'],[true,1,'ordinary'],[true,3,'ordinary'],[false,0,'collar'],[false,1,'drag'],[false,2,'drag'],[false,3,'carry']])
+    assert.equal(endingFor({...base,deaths},spouseWon),id);
   const old={...freshProfile(),cleared:true,chapter2:{cleared:true}};
   const legacy=restoreJourney(old,old);
   assert.equal(legacy.next,3);
-  assert.equal(endingFor(legacy),'ordinary');
+  assert.equal(endingFor(legacy,true),null);
+  const game=atFinale(legacy);
+  while(!game.duel.aiDone)game.aiHit('spouse','father');
+  defeatMother(game);
+  assert.equal(game.mode,'result');
+  assert.equal(game.endingResult.id,null);
+  assert.equal(game.profile.journey.ending,null);
   assert.equal(cleanStage3({run:{cp:2,bossHp:1}}).run.bossHp,12);
 });
 

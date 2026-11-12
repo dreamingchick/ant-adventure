@@ -1,5 +1,5 @@
-import { Game, makeEnemy, FLOOR } from './engine.js?v=0.4.4';
-import { endingFor } from './journey.js?v=0.4.4';
+import { Game, makeEnemy, FLOOR, WIDTH } from './engine.js?v=0.4.5';
+import { endingFor } from './journey.js?v=0.4.5';
 
 export const WINDS = [
   { from: 730, to: 1160, safe: [875, 985], force: -145 },
@@ -7,7 +7,6 @@ export const WINDS = [
 ];
 export const windPhase = time => time % 3.5;
 const MOTHER_HP = 12;
-const DUEL_TIME = 28;
 const DUEL_SETTLE_SPEED = 6;
 const GATE_X = 3040;
 const checkpoints = [
@@ -28,6 +27,7 @@ const makeWorld = () => ({
   rope: {x:-600,y:0,length:1,angle:0,velocity:0},
   heal: [{id:'porch-heal',x:3970,y:558}],sugar:[],
 });
+const makeMother=()=>({...makeEnemy('mother','boss',4760,2),hp:MOTHER_HP,max:MOTHER_HP,w:115,h:145});
 const stage = {
   chapter:3,width:5420,checkpoints,makeWorld,
   areas:[
@@ -42,8 +42,7 @@ const stage = {
   bossHp:MOTHER_HP,bossReward:0,bossTrigger:4350,arenaLeft:4290,arenaRight:5360,
   bossMin:4340,bossMax:5330,crateMin:-600,crateMax:-600,ropeRest:0,
   enemies:()=>[
-    makeEnemy('patrol','normal',2120,1),
-    {...makeEnemy('mother','boss',4760,2),hp:MOTHER_HP,max:MOTHER_HP,w:115,h:145},
+    makeEnemy('patrol','normal',2120,1),makeMother(),
   ],
   sugar:[[180,545,5,36],[1190,405,8,37],[1750,549,4,38],[2050,402,8,43],[2630,550,6,40],[3130,547,4,39],[3680,451,4,39],[4000,549,5,43]],
   respawnX:()=>3280,
@@ -126,15 +125,13 @@ export class ThresholdGame extends Game {
   attack(){return !this.crossing&&(!this.duel||!this.duel.playerDone)&&super.attack();}
   rememberBoss(){}
   recordBossHit(){}
-  onBossDefeated(){this.endPlayerDuel();}
-
-  endPlayerDuel(){
+  onBossDefeated(){
     if(!this.duel||this.duel.playerDone)return;
     this.duel.playerDone=true;
     Object.assign(this.input,{left:false,right:false,jump:false});
     Object.assign(this.p,{vx:0,vy:0,firePose:0,inv:0});
     this.shots=[];
-    this.notify('엄마 개미와의 대결 종료 · 베짱이의 대결이 마무리됩니다.');
+    this.notify('엄마 개미에게 승리했어요!');
   }
 
   hurt(amount=1){
@@ -144,9 +141,14 @@ export class ThresholdGame extends Game {
 
   onPlayerDefeat(){
     if(!this.duel){super.onPlayerDefeat();return;}
-    this.endPlayerDuel();
-    this.mother.state='rest';
+    this.spawn();
+    this.p.x=stage.bossTrigger+8;
+    this.p.dir=1;
+    this.camera=Math.min(stage.width-WIDTH,this.p.x-370);
+    Object.assign(this.mother,makeMother());
+    this.shots=[];
     this.save();
+    this.notify('엄마 개미에게 다시 도전하세요.');
   }
 
   updateCompanion(dt){
@@ -185,7 +187,7 @@ export class ThresholdGame extends Game {
   }
 
   startDuel(){
-    this.duel={elapsed:0,playerDone:false,spouse:5,father:6,aiDone:false,
+    this.duel={playerDone:false,spouse:5,father:6,aiDone:false,
       timer:0,round:0,spouseX:4590,fatherX:4980,strike:0,advantage:Math.random()<.5?'father':'spouse'};
   }
 
@@ -200,7 +202,6 @@ export class ThresholdGame extends Game {
   updateDuel(dt){
     const duel=this.duel;
     if(!duel)return;
-    duel.elapsed+=dt;
     duel.strike=Math.max(0,duel.strike-dt);
     if(!duel.aiDone){
       const pace=duel.playerDone?DUEL_SETTLE_SPEED:1;
@@ -217,7 +218,6 @@ export class ThresholdGame extends Game {
         duel.strike=.28;
       }
     }
-    if(duel.elapsed>=DUEL_TIME){duel.playerDone=true;duel.aiDone=true;}
     if(duel.playerDone&&duel.aiDone)this.finish();
   }
 
@@ -239,13 +239,6 @@ export class ThresholdGame extends Game {
     }
     if(this.duel?.playerDone){
       this.elapsed+=dt;this.time+=dt;
-      if(this.p.hp===0){
-        const mother=this.mother;
-        const target=this.p.x<stage.arenaRight-240?this.p.x+125:this.p.x-155;
-        mother.x=toward(mother.x,target,150*dt);
-        mother.dir=Math.sign(this.p.x-mother.x)||-1;
-        this.p.y=toward(this.p.y,FLOOR-this.p.h,290*dt);
-      }
       this.updateDuel(dt);
       return;
     }
@@ -265,11 +258,12 @@ export class ThresholdGame extends Game {
   }
 
   finish(){
-    if(this.mode!=='playing'||!this.duel?.playerDone||!this.duel.aiDone)return;
+    if(this.mode!=='playing'||!this.mother?.dead||!this.duel?.playerDone||!this.duel.aiDone)return;
+    const ending=endingFor(this.profile.journey,this.duel.father===0);
     this.endingResult={
-      id:this.profile.journey?.ending??endingFor(this.profile.journey),tracked:this.profile.journey?.tracked===true&&this.profile.journey.next>=3,
+      id:ending,tracked:this.profile.journey?.tracked===true&&this.profile.journey.next===3,
       hits:this.profile.journey?.hits??0,deaths:this.profile.journey?.deaths??0,
     };
-    super.finish();
+    super.finish(ending);
   }
 }

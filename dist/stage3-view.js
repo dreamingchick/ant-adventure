@@ -1,5 +1,5 @@
-import { FLOOR } from './engine.js?v=0.4.4';
-import { WINDS } from './stage3-engine.js?v=0.4.4';
+import { FLOOR } from './engine.js?v=0.4.5';
+import { WINDS } from './stage3-engine.js?v=0.4.5';
 
 function garment(ctx,fill,stroke,trace){
   ctx.beginPath();
@@ -149,7 +149,7 @@ export function drawThresholdDetails(ctx,g,{rr,ellipse,text,doorway,imageCell,im
     ellipse((duel.spouseX+duel.fatherX)/2,330,50,8,'#d68b4a91');
     text(duel.attacker==='father'?'쿵!':'퉷!',(duel.spouseX+duel.fatherX)/2,299,21,'#965138','center');
   }
-  if(duel.aiDone)text('대결 종료',4815,244,17,'#4d603d','center');
+  if(duel.aiDone)text(duel.father===0?'베짱이 승리':'아빠 개미 승리',4815,244,17,'#4d603d','center');
   const mother=g.mother;
   if(!mother.dead){
     imageCell(images.ant,0,0,2,2,mother.x-17,mother.y-155,151,154,mother.dir<0);

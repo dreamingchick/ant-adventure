@@ -1,4 +1,4 @@
-import { advanceJourney, newJourney, recordDamage } from './journey.js?v=0.4.4';
+import { advanceJourney, newJourney, recordDamage } from './journey.js?v=0.4.5';
 export const WIDTH=1280,HEIGHT=720,WORLD=7900,FLOOR=590;
 export const LEVELS={health:[3,4,5,6],spit:[100,125,150,175],regen:[25,30,35,40]};
 export const COSTS=[20,40,60];
@@ -81,7 +81,7 @@ onBossDefeated(){
   this.bossActive=false;this.arena=false;this.progress.run.bossHp=0;this.save();
   this.notify('경비가 길을 비켰어요. 오른쪽 문턱으로 가세요.');
 }
-finish(){if(this.mode!=='playing')return;this.commit();let bonus=0;if(!this.progress.bossReward){bonus=this.stage.bossReward;this.profile.bank+=bonus;this.progress.bossReward=bonus>0;}const gathered=this.progress.run.attemptSugar+bonus;this.progress.cleared=true;if(!this.progress.best||this.elapsed<this.progress.best){this.progress.best=this.elapsed;this.progress.bestLevels={...this.profile.levels};}this.progress.run=null;this.mode='result';this.bossActive=false;advanceJourney(this.profile,this.stage.chapter);this.save();this.sound('win');this.emit({type:'result',elapsed:this.elapsed,sugar:gathered,bonus});}
+finish(ending){if(this.mode!=='playing')return;this.commit();let bonus=0;if(!this.progress.bossReward){bonus=this.stage.bossReward;this.profile.bank+=bonus;this.progress.bossReward=bonus>0;}const gathered=this.progress.run.attemptSugar+bonus;this.progress.cleared=true;if(!this.progress.best||this.elapsed<this.progress.best){this.progress.best=this.elapsed;this.progress.bestLevels={...this.profile.levels};}this.progress.run=null;this.mode='result';this.bossActive=false;advanceJourney(this.profile,this.stage.chapter,ending);this.save();this.sound('win');this.emit({type:'result',elapsed:this.elapsed,sugar:gathered,bonus});}
 upgrade(key){if(this.mode!=='result'||!this.progress.cleared||!(key in this.profile.levels))return false;const level=this.profile.levels[key];if(level>=3||this.profile.bank<COSTS[level])return false;this.profile.bank-=COSTS[level];this.profile.levels[key]++;this.save();this.sound('checkpoint');return true;}
 update(dt){if(this.mode!=='playing')return;dt=Math.min(.033,dt);this.time+=dt;this.elapsed+=dt;const p=this.p;this.detachLock=Math.max(0,(this.detachLock||0)-dt);p.inv=Math.max(0,p.inv-dt);p.shotTimer=Math.max(0,p.shotTimer-dt);p.firePose=Math.max(0,p.firePose-dt);p.regenWait=Math.max(0,p.regenWait-dt);p.jumpBuffer=Math.max(0,p.jumpBuffer-dt);if(!p.regenWait)p.spit=Math.min(this.maxSpit,p.spit+this.regen*dt);const dir=(this.input.right?1:0)-(this.input.left?1:0);if(dir)p.dir=dir;
 const r=this.world.rope;if(!p.rope&&this.stage.ropeRest!==undefined){r.angle=this.stage.ropeRest;r.velocity=0;}else{r.velocity+=(-Math.sin(r.angle)*2+(p.rope?dir*2.8:0))*dt;r.velocity*=Math.exp(-.25*dt);r.angle+=r.velocity*dt;r.angle=Math.max(-.85,Math.min(.85,r.angle));if(Math.abs(r.angle)>=.85)r.velocity*=-.6;}

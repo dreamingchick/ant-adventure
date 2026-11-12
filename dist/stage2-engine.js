@@ -5,7 +5,7 @@ export const PLATFORMS=[
 {x:0,y:FLOOR,w:950,h:95},{x:1110,y:FLOOR,w:1280,h:95},{x:2510,y:FLOOR,w:1150,h:95},{x:3830,y:FLOOR,w:1570,h:95},
 {x:420,y:364,w:195,h:24},{x:690,y:320,w:115,h:24},{x:1400,y:350,w:215,h:24},{x:2050,y:360,w:160,h:24},
 {x:2790,y:357,w:195,h:24},{x:3270,y:330,w:175,h:24},{x:4040,y:344,w:170,h:24},{x:4520,y:350,w:190,h:24}];
-export const HAZARDS=[{x:790,w:110},{x:2250,w:110},{x:3520,w:120},{x:4730,w:105}];
+export const HAZARDS=[{x:1280,w:90},{x:2690,w:90},{x:3970,w:100},{x:4990,w:92}];
 const ENEMY_SEEDS=[{id:'crumb',x:1550,hp:2,kind:'normal'},{id:'scout',x:3100,hp:2,kind:'thin'},{id:'guard',x:4700,hp:6,kind:'fat'}];
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const hit=(a,b)=>a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;

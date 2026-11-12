@@ -49,6 +49,16 @@ tryJump(){const p=this.p;if((p.ground||p.coyote>0)&&p.jumpBuffer>0){p.vy=-700;p.
 attack(){const p=this.p;if(this.mode!=='playing'||p.climb||p.rope||p.shotTimer>0||p.spit<25)return false;p.spit-=25;p.shotTimer=.4;p.regenWait=1;p.firePose=.25;this.shots.push({x:p.x+p.w/2+p.dir*35,y:p.y+23,vx:p.dir*660,left:240,r:7});this.sound('spit');return true;}
 pathLength(path){let sum=0;for(let i=1;i<path.points.length;i++)sum+=Math.hypot(path.points[i].x-path.points[i-1].x,path.points[i].y-path.points[i-1].y);return sum;}
 pointOn(path,t){let left=Math.max(0,Math.min(this.pathLength(path),t));for(let i=1;i<path.points.length;i++){const a=path.points[i-1],b=path.points[i],len=Math.hypot(b.x-a.x,b.y-a.y);if(left<=len)return {x:a.x+(b.x-a.x)*left/len,y:a.y+(b.y-a.y)*left/len,angle:Math.atan2(b.y-a.y,b.x-a.x)};left-=len;}return path.points.at(-1);}
+antPose(){
+  const {climb, pathT, dir, rope}=this.p;
+  if(climb){
+    // Use the tangent on the side of the corner the ant is moving into.
+    const {angle}=this.pointOn(climb,pathT+dir*.001);
+    return {rotation:angle??0,flip:dir<0};
+  }
+  const swing=rope?this.world.rope.velocity:0;
+  return {rotation:0,flip:Math.abs(swing)>.02?swing<0:dir<0};
+}
 ropeTip(){const r=this.world.rope;return {x:r.x+Math.sin(r.angle)*r.length,y:r.y+Math.cos(r.angle)*r.length};}
 getInteraction(){const p=this.p;if(p.rope)return {kind:'rope',label:'점프로 놓기'};if(p.push)return {kind:'crate',label:'놓기'};if(p.climb)return null;const c=this.world.crate;if(Math.abs(p.x+p.w/2-(c.x+c.w/2))<105&&Math.abs(p.y+p.h-(c.y+c.h))<45)return {kind:'crate',label:'밀기'};const tip=this.ropeTip();if(Math.hypot(p.x+p.w/2-tip.x,p.y+p.h/2-tip.y)<(this.stage.ropeReach??135))return {kind:'rope',label:'실밥 잡기'};for(const path of this.world.paths){if(this.detachLock>0&&path.slip)continue;for(let t=0;t<=this.pathLength(path);t+=12){const q=this.pointOn(path,t);if(Math.hypot(p.x+p.w/2-q.x,p.y+p.h/2-q.y)<62)return {kind:'path',label:path.slip?'미끄러운 벽':'붙기',path,t};}}return null;}
 interact(){if(this.mode!=='playing')return;const p=this.p,i=this.getInteraction();if(!i)return;if(i.kind==='crate'){p.push=!p.push;this.notify(p.push?'← → 로 블록을 밀고 X로 놓으세요':'블록을 놓았어요');}if(i.kind==='rope'&&!p.rope){p.rope=true;p.ground=false;p.climb=null;this.sound('attach');}if(i.kind==='path'){p.climb=i.path;p.pathT=i.t;p.climbTime=0;p.ground=false;p.push=false;this.sound('attach');}}

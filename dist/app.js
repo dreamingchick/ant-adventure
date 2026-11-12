@@ -1,14 +1,14 @@
 import {initPwa} from './pwa.js';
 import {mountNameKeyboard} from './name-keyboard.js';
 import {mountViewport} from './viewport.js';
-import {Game,freshProfile,sanitize,WIDTH,HEIGHT,FLOOR,COSTS,LEVELS} from './engine.js?v=0.3.1';
-import {KitchenGame,cleanStage2} from './stage2-engine.js?v=0.3.1';
-import {drawKitchenBackdrop,drawKitchenDetails} from './stage2-view.js?v=0.3.1';
+import {Game,freshProfile,sanitize,WIDTH,HEIGHT,FLOOR,COSTS,LEVELS} from './engine.js?v=0.3.2';
+import {KitchenGame,cleanStage2} from './stage2-engine.js?v=0.3.2';
+import {drawKitchenBackdrop,drawKitchenDetails} from './stage2-view.js?v=0.3.2';
 import {createProfileStore} from './profile-store.js';
 const $=s=>document.querySelector(s),canvas=$('#game'),ctx=canvas.getContext('2d');
 const params=new URLSearchParams(location.search);
 const reviewHost=['ant-adventure-chapter-review.snugbrink3.chatgpt.site','localhost','127.0.0.1'].includes(location.hostname);
-const review=reviewHost&&['climb','wet','kitchen','boss1','boss2'].includes(params.get('review')) ? params.get('review') : null;
+const review=reviewHost&&['climb','wet','kitchen','boss1','boss2','chapter1'].includes(params.get('review')) ? params.get('review') : null;
 const kitchenChapter=params.get('chapter')==='2'||review==='kitchen'||review==='boss2';
 const SAVE_KEY=review ? 'ant-adventure-review-v1-'+review : 'ant-adventure-save-v1';
 let profile,store;
@@ -73,8 +73,11 @@ function renderDialog(){$('#speaker').textContent=lines[lineIndex][0];$('#dialog
 function nextDialog(){lineIndex++;if(lineIndex>=lines.length){$('#dialog').hidden=true;clearInputs();dialogDone();}else renderDialog();}
 function pause(){if(game.mode!=='playing')return;game.mode='paused';clearInputs();$('#pause-name').value=profile.name;$('#sound').textContent=profile.muted?'소리 꺼짐 ♫':'소리 켜짐 ♪';$('#pause-menu').hidden=false;}
 function resume(){$('#pause-menu').hidden=true;game.mode='playing';clearInputs();}
-function home(){clearInputs();game.mode='menu';for(const id of ['pause-menu','result','dialog','help','hud','controls','hint','boss-hud'])$('#'+id).hidden=true;$('#menu').hidden=false;$('#ant-name').value=profile.name;$('#continue').hidden=!profile.run;$('#chapter-02-menu').hidden=!profile.cleared;$('#start').textContent=profile.run?'처음부터 모험하기 →':'모험 시작 →';$('#best-label').textContent=profile.best?'최고 기록 '+time(profile.best):'첫 발자국을 남겨 보세요';}
+function home(){clearInputs();game.mode='menu';for(const id of ['pause-menu','result','dialog','help','hud','controls','hint','boss-hud'])$('#'+id).hidden=true;$('#menu').hidden=false;$('#review-chapters').hidden=!reviewHost;$('#ant-name').value=profile.name;$('#continue').hidden=!profile.run;$('#chapter-02-menu').hidden=!profile.cleared;$('#start').textContent=profile.run?'처음부터 모험하기 →':'모험 시작 →';$('#best-label').textContent=profile.best?'최고 기록 '+time(profile.best):'첫 발자국을 남겨 보세요';}
 const enterKitchen=()=>navigate('./?chapter=2');
+for(const button of document.querySelectorAll('[data-review-chapter]')){
+  button.onclick=()=>navigate('./?review='+button.dataset.reviewChapter);
+}
 $('#chapter-02').onclick=enterKitchen;$('#chapter-02-menu').onclick=enterKitchen;$('#start').onclick=()=>{if(profile.run){if(!confirm('미확정 진행을 포기하고 처음부터 출발할까요? 확정 설탕과 강화는 유지됩니다.'))return;}start(false);};$('#continue').onclick=()=>start(true);$('#pause').onclick=pause;$('#resume').onclick=resume;$('#dialog-next').onclick=nextDialog;$('#dialog-skip').onclick=()=>{$('#dialog').hidden=true;clearInputs();dialogDone();};$('#checkpoint-retry').onclick=()=>{$('#pause-menu').hidden=true;game.retry();};$('#restart').onclick=()=>{if(confirm('현재 구간의 미확정 설탕을 되돌리고 처음부터 출발할까요?')){$('#pause-menu').hidden=true;game.restart();}};const returnHome=()=>kitchenChapter||review?navigate('./'):home();$('#home').onclick=returnHome;$('#result-home').onclick=returnHome;$('#replay').onclick=()=>{showPlay();game.start(false);};$('#help-open').onclick=()=>{helpReturn=game.mode;$('#help').hidden=false;};$('#help-close').onclick=()=>{$('#help').hidden=true;game.mode=helpReturn;};$('#sound').onclick=()=>{profile.muted=!profile.muted;persist();$('#sound').textContent=profile.muted?'소리 꺼짐 ♫':'소리 켜짐 ♪';};function rename(input){profile.name=$(input).value.trim().slice(0,12)||'개미';$(input).blur();$('#ant-name').value=profile.name;persist();toast('이름을 '+profile.name+'(으)로 바꿨어요.');}$('#rename').onclick=()=>rename('#ant-name');$('#pause-rename').onclick=()=>rename('#pause-name');
 mountNameKeyboard({inputs:document.querySelectorAll('#ant-name,#pause-name'),host:$('#viewport'),refresh:viewport.refresh,onSave:input=>rename('#'+input.id)});
 for(const input of document.querySelectorAll('#ant-name,#pause-name'))input.addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.isComposing){event.preventDefault();rename('#'+input.id);}});
@@ -168,7 +171,7 @@ for(const wave of g.guardWaves??[]){
 }
 for(const s of g.shots){ellipse(s.x-s.vx*.008,s.y,13,4,'#ebfbef99');ellipse(s.x,s.y,8,7,'#bfe7d9');ellipse(s.x-2,s.y-2,3,2,'#fff');}for(const s of g.seeds){ellipse(s.x,s.y,9,5,'#83613c');}
 // Exact original ant sprite sheet from Chacha, let's wash.
-ctx.save();if(p.inv>0&&Math.floor(p.inv*12)%2)ctx.globalAlpha=.55;ellipse(p.x+p.w/2,p.y+p.h+2,34,7,'#4d443333');let col=0,row=0;if(p.firePose>0)col=1;else if(Math.abs(p.vx)>20||p.climb&&((g.input.left||g.input.right))){row=1;col=Math.floor(t*9)%2;}imageCell(images.ant,col,row,2,2,p.x+p.w/2-49,p.y-34,98,101,p.dir<0);if(p.firePose>0)text('퉷!',p.x+p.w/2+p.dir*47,p.y-10,18,'#fff8dd','center');ctx.restore();
+ctx.save();if(p.inv>0&&Math.floor(p.inv*12)%2)ctx.globalAlpha=.55;ellipse(p.x+p.w/2,p.y+p.h+2,34,7,'#4d443333');let col=0,row=0;if(p.firePose>0)col=1;else if(Math.abs(p.vx)>20||p.climb&&((g.input.left||g.input.right))){row=1;col=Math.floor(t*9)%2;}const pose=g.antPose();imageCell(images.ant,col,row,2,2,p.x+p.w/2-49,p.y-34,98,101,pose.flip,pose.rotation);if(p.firePose>0)text('퉷!',p.x+p.w/2+p.dir*47,p.y-10,18,'#fff8dd','center');ctx.restore();
 for(const a of particles)ellipse(a.x,a.y,3*a.life,3*a.life,a.color);ctx.restore();
 // Foreground warmth and a fine vignette frame the miniature stage.
 const shade=ctx.createLinearGradient(0,620,0,720);shade.addColorStop(0,'#382d1800');shade.addColorStop(1,'#3a341655');ctx.fillStyle=shade;ctx.fillRect(0,620,1280,100);
@@ -216,6 +219,7 @@ if(kitchenChapter){
     dialog([['챕터 2','거실의 베짱이 대장을 쓰러뜨리면 부엌으로 가는 길이 열립니다.']],()=>navigate('./'));
   }
 }else if(review==='boss1')beginBossReview();
+else if(review==='chapter1')start(Boolean(game.progress.run));
 else if(review){
   showPlay();game.start(false);
   game.p.x=review==='wet'?2125:1016;

@@ -1,4 +1,4 @@
-const VERSION='0.4.6';
+const VERSION='1.0.0';
 const PREFIX='ant-adventure-shell-';
 const CACHE=PREFIX+VERSION+'-chapters';
 const ASSETS=['./','./index.html','./stage2.html','./stage2-engine.js?v='+VERSION,'./stage2-view.js?v='+VERSION,'./stage3-engine.js?v='+VERSION,'./stage3-view.js?v='+VERSION,'./journey.js?v='+VERSION,'./profile-store.js','./style.css?v='+VERSION,'./app.js?v='+VERSION,'./engine.js?v='+VERSION,'./viewport.js','./name-keyboard.js','./pwa.js','./manifest.webmanifest','./assets/ant-original.webp','./assets/grasshoppers.webp','./assets/living-room.webp','./assets/kitchen.webp','./assets/threshold.webp','./assets/endings/ordinary.webp','./assets/endings/collar-v2.webp','./assets/endings/drag-v2.webp','./assets/endings/carry-v2.webp','./assets/endings/perfect.webp','./icons/icon-192.png','./icons/icon-512.png','./icons/icon-maskable-512.png','./icons/apple-touch-icon.png'];

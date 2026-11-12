@@ -1,5 +1,5 @@
-import { FLOOR } from './engine.js?v=0.4.6';
-import { WINDS } from './stage3-engine.js?v=0.4.6';
+import { FLOOR } from './engine.js?v=1.0.0';
+import { WINDS } from './stage3-engine.js?v=1.0.0';
 
 function garment(ctx,fill,stroke,trace){
   ctx.beginPath();

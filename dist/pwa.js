@@ -5,7 +5,7 @@ function cameFromArcade() {
 }
 export function initPwa(){
   const button=document.querySelector('#install-app'),update=document.querySelector('#update-app'),guide=document.querySelector('#install-guide'),instructions=document.querySelector('#install-instructions'),status=document.querySelector('#install-status');
-  const fromArcade=cameFromArcade();
+  const fromArcade=true;
   let deferred=null,registration=null,updating=false;update.hidden=true;
   const standalone=()=>window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
   const reflect=()=>{if(fromArcade){button.textContent='← 대문 홈으로';button.disabled=false;button.setAttribute('aria-label','가루 오락실 대문 홈으로 돌아가기');return;}button.textContent=standalone()?'설치된 앱 ✓':'앱 설치 ↓';button.disabled=standalone();};reflect();

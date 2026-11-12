@@ -1,24 +1,34 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readFile} from 'node:fs/promises';
-import {HAZARDS} from '../dist/stage2-engine.js';
-const source=async f=>readFile(new URL('../dist/'+f,import.meta.url),'utf8');
-test('ceiling sprite stays upright and path has solid support beneath hint dots',async()=>{
- const app=await source('app.js');
- assert.match(app,/Math\.abs\(Math\.sin\(q\.angle\)\)<\.4/);
- assert.match(app,/rotation=0;if\(p\.climb\)/);
- assert.doesNotMatch(app,/rotation=Math\.PI;/);
- assert.match(app,/Solid wooden\/fabric support FIRST/);
- assert.match(app,/ctx\.lineWidth=41;ctx\.stroke\(\)/);
+import { readFile } from 'node:fs/promises';
+import { freshProfile, makeWorld } from '../dist/engine.js';
+import { KitchenGame, HAZARDS, KITCHEN_CHECKPOINTS } from '../dist/stage2-engine.js';
+const source = f => readFile(new URL('../dist/' + f, import.meta.url), 'utf8');
+
+test('the ant stays upright and every climb path receives visible solid rails', async () => {
+  const app = await source('app.js');
+  assert.match(app, /imageCell\(images\.ant,[^;]+p\.dir<0\);/);
+  assert.doesNotMatch(app, /p\.climb[^\n]*rotation/);
+  assert.match(app, /for\(const path of g\.world\.paths\)drawClimbSupport\(path\)/);
+  assert.match(app, /lineWidth=45;ctx\.stroke\(\)/);
+  assert.deepEqual(makeWorld().paths.map(path => path.id), ['table','slip']);
 });
-test('chapter two HUD and controls use chapter one visual language',async()=>{
- const html=await source('stage2.html');
- for(const token of ['class="vitals"','class="chapter"','id="spit-fill"','class="attack"','class="jump"','class="move"'])assert.ok(html.includes(token),token);
- assert.match(html,/background:#23372edb/);
- assert.match(html,/rgba\(247,242,227,\.30\)/);
+
+test('both chapters share one HUD, one control layout and one viewport manager', async () => {
+  const [index, app, legacy] = await Promise.all(['index.html','app.js','stage2.html'].map(source));
+  for (const token of ['class="vitals"', 'class="chapter"', 'id="spit-fill"', 'id="interact"', 'data-action="jump"'])
+    assert.ok(index.includes(token), token);
+  assert.match(app, /kitchenChapter\?KitchenGame:Game/);
+  assert.match(app, /mountViewport\(/);
+  assert.match(legacy, /\.\/\?chapter=2/);
 });
-test('hazards start after opening safe run and stay on actual floor segments',()=>{
- const floors=[{x:0,w:950},{x:1110,w:1280},{x:2510,w:1150},{x:3830,w:1570}];
- assert.ok(HAZARDS[0].x>1110);
- for(const h of HAZARDS)assert.ok(floors.some(f=>h.x>=f.x&&h.x+h.w<=f.x+f.w),JSON.stringify(h));
+
+test('kitchen spikes have actual floor support and leave shelters clear', () => {
+  const game = new KitchenGame(freshProfile());
+  const floors = game.world.solids.filter(s => s.type === 'floor');
+  for (const h of HAZARDS) {
+    assert.ok(h.x > 850);
+    assert.ok(floors.some(f => h.x >= f.x && h.x + h.w <= f.x + f.w));
+    assert.ok(KITCHEN_CHECKPOINTS.every(c => c.x < h.x - 42 || c.x > h.x + h.w + 42));
+  }
 });

@@ -1,6 +1,6 @@
 const VERSION='0.1.4';
 const PREFIX='ant-adventure-shell-';
-const CACHE=PREFIX+VERSION;
+const CACHE=PREFIX+VERSION+'-arcade-home-1';
 const ASSETS=['./','./index.html','./style.css?v='+VERSION,'./app.js?v='+VERSION,'./engine.js','./viewport.js','./name-keyboard.js','./pwa.js','./manifest.webmanifest','./assets/ant-original.webp','./assets/grasshoppers.webp','./assets/living-room.webp','./icons/icon-192.png','./icons/icon-512.png','./icons/icon-maskable-512.png','./icons/apple-touch-icon.png'];
 const urls=ASSETS.map(path=>new URL(path,self.registration.scope).href);
 self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(urls.map(url=>new Request(url,{cache:'reload'})))));});

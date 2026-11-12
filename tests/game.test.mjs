@@ -3,6 +3,34 @@ import {KitchenGame} from '../dist/stage2-engine.js';
 import {ThresholdGame,DUEL_DECK_Y} from '../dist/stage3-engine.js';
 const run=()=>{const g=new Game();g.start();return g;};const tick=(g,n=60)=>{for(let i=0;i<n;i++)g.update(1/60);};
 
+test('a new journey saves fresh progression while preserving earned endings and preferences',()=>{
+  const profile={
+    ...freshProfile(),name:'테스트개미',muted:true,bank:80,levels:{health:3,spit:2,regen:1},
+    cleared:true,bossReward:true,best:88,bestLevels:{health:3},endings:['drag','drag'],
+    journey:{tracked:true,next:4,hits:12,deaths:2,ending:'ordinary'},
+    run:{cp:3,bossHp:5,collected:['s0'],dead:['thin1'],activated:[3],elapsed:88,attemptSugar:2},
+    chapter2:{cleared:true,run:{cp:2,bossHp:8}},chapter3:{cleared:true,run:{cp:2,bossHp:4}},
+  };
+  const saves=[];
+  const game=new Game(profile,event=>{if(event.type==='save')saves.push(structuredClone(profile));});
+  game.start(true);
+  assert.equal(game.cp,3);
+  game.resetJourney();
+  game.start();
+
+  assert.equal(game.cp,0);
+  assert.equal(game.p.hp,3);
+  assert.equal(game.p.spit,100);
+  assert.equal(game.enemies.find(enemy=>enemy.boss).hp,14);
+  const saved=saves.at(-1);
+  assert.deepEqual(saved,{
+    ...freshProfile(),name:'테스트개미',muted:true,endings:['drag','ordinary'],
+    journey:{tracked:true,next:1,hits:0,deaths:0,ending:null},chapter2:null,chapter3:null,
+    run:{cp:0,bossHp:14,collected:[],dead:[],activated:[],elapsed:0,attemptSugar:0},
+  });
+  assert.equal(saves.length,2);
+});
+
 for (const [chapter,GameType] of [[1,Game],[2,KitchenGame]]) {
   for (const side of ['left','right']) {
     test(`chapter ${chapter} boss charge can hit a player against the ${side} wall`,()=>{

@@ -12,6 +12,11 @@ export function newJourney() {
   return { tracked: true, next: 1, hits: 0, deaths: 0, ending: null };
 }
 
+export function unlockedEndings(profile) {
+  const saved = Array.isArray(profile.endings) ? profile.endings : [];
+  return [...new Set([...saved, profile.journey?.ending].filter(id => Object.hasOwn(ENDINGS, id)))];
+}
+
 export function restoreJourney(raw, profile) {
   const journey = raw?.journey;
   if (journey && Number.isInteger(journey.next) && journey.next >= 1 && journey.next <= 4) {

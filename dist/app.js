@@ -1,12 +1,12 @@
 import {initPwa} from './pwa.js';
 import {mountNameKeyboard} from './name-keyboard.js';
 import {mountViewport} from './viewport.js';
-import {Game,freshProfile,sanitize,WIDTH,HEIGHT,FLOOR,COSTS,LEVELS} from './engine.js?v=1.0.2';
-import {KitchenGame,cleanStage2} from './stage2-engine.js?v=1.0.2';
-import {drawKitchenBackdrop,drawKitchenDetails} from './stage2-view.js?v=1.0.2';
-import {ThresholdGame,cleanStage3} from './stage3-engine.js?v=1.0.2';
-import {drawThresholdBackdrop,drawThresholdDetails,drawBridalDress} from './stage3-view.js?v=1.0.2';
-import {ENDINGS,newJourney,restoreJourney} from './journey.js?v=1.0.2';
+import {Game,freshProfile,sanitize,WIDTH,HEIGHT,FLOOR,COSTS,LEVELS} from './engine.js?v=1.0.3';
+import {KitchenGame,cleanStage2} from './stage2-engine.js?v=1.0.3';
+import {drawKitchenBackdrop,drawKitchenDetails} from './stage2-view.js?v=1.0.3';
+import {ThresholdGame,cleanStage3} from './stage3-engine.js?v=1.0.3';
+import {drawThresholdBackdrop,drawThresholdDetails,drawBridalDress} from './stage3-view.js?v=1.0.3';
+import {ENDINGS,newJourney,restoreJourney,unlockedEndings} from './journey.js?v=1.0.3';
 import {createProfileStore} from './profile-store.js';
 const $=s=>document.querySelector(s),canvas=$('#game'),ctx=canvas.getContext('2d');
 const params=new URLSearchParams(location.search);
@@ -23,7 +23,7 @@ try{
   if(raw?.chapter2)profile.chapter2=cleanStage2(raw.chapter2);
   if(raw?.chapter3)profile.chapter3=cleanStage3(raw.chapter3);
   profile.journey=restoreJourney(raw,profile);
-  profile.endings=Array.isArray(raw?.endings)?[...new Set(raw.endings.filter(id=>Object.hasOwn(ENDINGS,id)))]:[];
+  profile.endings=unlockedEndings({endings:raw?.endings,journey:profile.journey});
 }catch{profile=freshProfile();}
 if(review==='kitchen'||review==='boss2')profile.cleared=true;
 if(review==='threshold'||review==='finale'){
@@ -110,11 +110,8 @@ const enterThreshold=()=>navigate('./?chapter=3');
 $('#chapter-03').onclick=enterThreshold;
 $('#chapter-03-menu').onclick=enterThreshold;
 $('#new-journey').onclick=()=>{
-  if(!confirm('챕터 1부터 새 여정을 시작할까요? 현재 체크포인트는 초기화되고 강화·설탕·해금은 유지됩니다.'))return;
-  profile.journey=newJourney();
-  profile.run=null;
-  if(profile.chapter2)profile.chapter2.run=null;
-  if(profile.chapter3)profile.chapter3.run=null;
+  if(!confirm('챕터 1부터 새 여정을 시작할까요? 챕터 진행·체크포인트·강화·설탕·기록을 초기화합니다. 해금한 엔딩은 유지됩니다.'))return;
+  game.resetJourney();
   start(false);
 };
 $('#ending-gallery-open').onclick=openEndingGallery;
@@ -131,8 +128,7 @@ mountNameKeyboard({inputs:document.querySelectorAll('#ant-name,#pause-name'),hos
 for(const input of document.querySelectorAll('#ant-name,#pause-name'))input.addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.isComposing){event.preventDefault();rename('#'+input.id);}});
 function openEndingGallery(){
   const latest=profile.journey;
-  const unlocked=new Set(profile.endings);
-  if(latest?.ending)unlocked.add(latest.ending);
+  const unlocked=new Set(unlockedEndings(profile));
   const entries=Object.entries(ENDINGS);
   const gallery=$('#ending-gallery');
   const list=$('#ending-list');

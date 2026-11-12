@@ -1,4 +1,4 @@
-import { advanceJourney, newJourney, recordDamage } from './journey.js?v=1.0.2';
+import { advanceJourney, newJourney, recordDamage, unlockedEndings } from './journey.js?v=1.0.3';
 export const WIDTH=1280,HEIGHT=720,WORLD=7900,FLOOR=590;
 const ARENA_WALL_WIDTH=20;
 export const LEVELS={health:[3,4,5,6],spit:[100,125,150,175],regen:[25,30,35,40]};
@@ -39,6 +39,14 @@ bossHp(value){return typeof value==='number'&&Number.isFinite(value)?Math.max(th
 get maxHp(){return LEVELS.health[this.profile.levels.health];}get maxSpit(){return LEVELS.spit[this.profile.levels.spit];}get regen(){return LEVELS.regen[this.profile.levels.regen];}
 notify(text){this.emit({type:'toast',text});}sound(name){this.emit({type:'sound',name});}
 setup(){this.world=this.stage.makeWorld();let n=0;for(const [x,y,count,space]of this.stage.sugar)for(let i=0;i<count;i++)this.world.sugar.push({id:'s'+n++,x:x+i*space,y,value:1});this.enemies=this.stage.enemies();this.shots=[];this.seeds=[];this.healTaken=new Set();this.collected=new Set(this.progress.run?.collected||[]);this.pending.clear();for(const e of this.enemies){e.dead=(this.progress.run?.dead||[]).includes(e.id);if(e.boss){e.hp=this.bossHp(this.progress.run?.bossHp);e.dead=e.hp===0;}}this.bossActive=false;this.bossIntro=false;this.arena=false;}
+resetJourney(){
+  const {name,muted}=this.profile;
+  Object.assign(this.profile,freshProfile(),{
+    name,muted,endings:unlockedEndings(this.profile),journey:newJourney(),chapter2:null,chapter3:null,
+  });
+  this.time=0;
+  this.detachLock=0;
+}
 start(resume=false){if(!this.profile.journey&&this.stage.chapter===1)this.profile.journey=newJourney();this.rememberBoss();if(!resume||!this.progress.run){const prior=this.progress.run;this.progress.run={bossHp:this.bossHp(prior?.bossHp),cp:0,collected:prior?.collected||[],dead:[],activated:[],elapsed:0,attemptSugar:prior?.attemptSugar||0};}this.setup();this.cp=this.progress.run.cp;this.elapsed=this.progress.run.elapsed;this.spawn();this.mode='playing';this.save();}
 spawn(){const p=this.p,cp=this.stage.checkpoints[this.cp];Object.assign(p,{x:cp.x,y:cp.y-p.h,vx:0,vy:0,hp:this.maxHp,spit:this.maxSpit,ground:true,climb:null,rope:false,push:false,shotTimer:0,regenWait:0,inv:1,firePose:0,jumpBuffer:0});this.camera=Math.max(0,Math.min(this.stage.width-WIDTH,p.x-370));this.input={left:false,right:false,jump:false};}
 save(){this.emit({type:'save'});}

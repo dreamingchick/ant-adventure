@@ -46,7 +46,18 @@ else if(s.type==='wood'){const grad=ctx.createLinearGradient(s.x,0,s.x+s.w,0);gr
 else drawBook(s,g.world.solids.indexOf(s));}
 // Water gaps.
 for(const [x,w]of [[1150,320],[3200,280]]){const water=ctx.createLinearGradient(0,585,0,720);water.addColorStop(0,'#8dc2c3b0');water.addColorStop(1,'#386e7470');rr(x,640,w,80,20,water);for(let k=0;k<4;k++){ellipse(x+w/2+Math.sin(t+k)*30,650+k*13,w*.35-k*8,3,'#d7f1dd55');}text('물웅덩이',x+w/2,699,12,'#e9f2d9','center');}
-for(const path of g.world.paths){ctx.save();ctx.beginPath();path.points.forEach((q,i)=>i?ctx.lineTo(q.x,q.y):ctx.moveTo(q.x,q.y));ctx.setLineDash([3,14]);ctx.lineWidth=8;ctx.lineCap='round';ctx.strokeStyle=path.slip?'#d5ba61':'#f9edbf';ctx.stroke();ctx.restore();for(let d=0;d<g.pathLength(path);d+=80){const q=g.pointOn(path,d);text('⋮',q.x,q.y+8,24,path.slip?'#9e7337':'#67784a','center');}text(path.slip?'미끄러운 표면':'발자국을 따라가요',path.points[0].x-20,path.points.at(-1).y-28,12,'#5c6e43','center');}
+for(const path of g.world.paths){
+  // Solid wooden/fabric support FIRST; dashed footprints are only the navigation hint.
+  ctx.save();ctx.lineJoin='round';ctx.lineCap='round';
+  ctx.beginPath();path.points.forEach((q,i)=>i?ctx.lineTo(q.x,q.y):ctx.moveTo(q.x,q.y));
+  ctx.strokeStyle=path.slip?'#9d8665':'#765f48';ctx.lineWidth=41;ctx.stroke();
+  ctx.strokeStyle=path.slip?'#d4c39a':'#c4a579';ctx.lineWidth=32;ctx.stroke();
+  ctx.strokeStyle=path.slip?'#eee0b5':'#e6cda0';ctx.lineWidth=13;ctx.stroke();
+  ctx.setLineDash([3,17]);ctx.lineWidth=5;ctx.strokeStyle=path.slip?'#907542':'#57754f';ctx.stroke();
+  ctx.setLineDash([]);ctx.restore();
+  for(const [i,q] of path.points.entries()){ellipse(q.x,q.y,12,12,path.slip?'#eed7a1':'#e5c792');ellipse(q.x,q.y,5,5,'#806646');}
+  const top=path.points.at(-1);text(path.slip?'미끄러운 표면':'가구 밑 연결 턱',top.x-35,top.y-36,13,'#4e6548','center');
+}
 const c=g.world.crate;ctx.save();ctx.shadowColor='#49382955';ctx.shadowBlur=9;rr(c.x,c.y,c.w,c.h,6,'#ba8358','#694c36');rr(c.x+6,c.y+5,c.w-12,c.h-10,4,'#d4aa72','#eed8aa');text('A',c.x+c.w/2,c.y+39,32,'#7f5a3c','center');ctx.restore();
 const r=g.world.rope,tip=g.ropeTip();ctx.beginPath();ctx.moveTo(r.x,r.y);ctx.lineTo(tip.x,tip.y);ctx.lineWidth=7;ctx.strokeStyle='#8b7350';ctx.stroke();ctx.beginPath();ctx.moveTo(r.x-1,r.y);ctx.lineTo(tip.x-1,tip.y);ctx.lineWidth=2;ctx.strokeStyle='#e5d3a9';ctx.setLineDash([4,5]);ctx.stroke();ctx.setLineDash([]);ellipse(tip.x,tip.y,9,10,'#ad8c58');rr(r.x-90,r.y-16,180,20,6,'#8d704a');
 for(let i=1;i<CHECKPOINTS.length;i++){const cp=CHECKPOINTS[i];if(Math.abs(cp.x-g.camera-WIDTH/2)>800)continue;ellipse(cp.x+20,586,43,8,'#586f3b30');ctx.strokeStyle='#765938';ctx.lineWidth=6;ctx.beginPath();ctx.moveTo(cp.x+22,590);ctx.lineTo(cp.x+22,483);ctx.stroke();ctx.beginPath();ctx.moveTo(cp.x+22,483);ctx.quadraticCurveTo(cp.x+68,465,cp.x+67,510);ctx.quadraticCurveTo(cp.x+40,520,cp.x+22,499);ctx.fillStyle=i<=g.cp?'#6c975d':'#b0b487';ctx.fill();text('쉼터',cp.x+20,470,12,'#476239','center');if(i<=g.cp){ctx.shadowColor='#ffe9a4';ctx.shadowBlur=18;ellipse(cp.x+22,482,5,6,'#ffe0a0');ctx.shadowBlur=0;}}
@@ -60,7 +71,13 @@ rr(7630,380,130,210,60,'#48543b','#c9b886');rr(7646,402,99,188,45,'#263d2d');tex
 for(const e of g.enemies){if(e.dead||e.x+e.w<g.camera-100||e.x>g.camera+WIDTH+100)continue;const walk=e.state==='walk'?Math.sin(t*(e.type==='thin'?16:8))*2:0;ellipse(e.x+e.w/2,e.y+3,e.w*.55,7,'#34492330');const cell=e.type==='fat'||e.boss?[0,0]:e.type==='thin'?[1,0]:e.type==='smart'?[1,1]:[0,1];const w=e.boss?235:e.type==='fat'?118:94,h=e.boss?225:120;ctx.save();if(e.stun>0)ctx.globalAlpha=.65;imageCell(images.grass,...cell,2,2,e.x+e.w/2-w/2,e.y-h+walk,w,h,e.dir>0);ctx.restore();if(e.boss){text('♛',e.x+e.w/2,e.y-h-3,30,'#bb813c','center');}else{const names={normal:'평범한 베짱이',fat:'뚱뚱한 베짱이',thin:'마른 베짱이',smart:'똑똑한 베짱이'};text(names[e.type],e.x+e.w/2,e.y-h-8,11,'#485936','center');rr(e.x+e.w/2-20,e.y-h,40,4,2,'#526b3d33');rr(e.x+e.w/2-20,e.y-h,40*e.hp/e.max,4,2,'#71975a');}if(e.state==='warn'||e.state==='aim'){text(e.state==='aim'?'⌖':'!',e.x+e.w/2,e.y-h-30,30,'#b75037','center');if(e.state==='aim'){ctx.save();ctx.strokeStyle='#be5e4b88';ctx.setLineDash([4,9]);ctx.beginPath();ctx.moveTo(e.x+e.w/2,e.y-55);ctx.lineTo(e.x+e.w/2+e.dir*400,e.y-55);ctx.stroke();ctx.restore();}}if(e.boss&&e.state==='rest')text('헉… 헉…',e.x+e.w/2,e.y-h-30,17,'#715842','center');}
 for(const s of g.shots){ellipse(s.x-s.vx*.008,s.y,13,4,'#ebfbef99');ellipse(s.x,s.y,8,7,'#bfe7d9');ellipse(s.x-2,s.y-2,3,2,'#fff');}for(const s of g.seeds){ellipse(s.x,s.y,9,5,'#83613c');}
 // Exact original ant sprite sheet from Chacha, let's wash.
-ctx.save();if(p.inv>0&&Math.floor(p.inv*12)%2)ctx.globalAlpha=.55;ellipse(p.x+p.w/2,p.y+p.h+2,34,7,'#4d443333');let col=0,row=0;if(p.firePose>0)col=1;else if(Math.abs(p.vx)>20||p.climb&&((g.input.left||g.input.right))){row=1;col=Math.floor(t*9)%2;}let rotation=0;if(p.climb){const q=g.pointOn(p.climb,p.pathT);rotation=q.angle;if(rotation<-.1)rotation=-Math.PI/2;else rotation=Math.PI;}imageCell(images.ant,col,row,2,2,p.x+p.w/2-49,p.y-34,98,101,p.dir<0&&!p.climb,rotation);if(p.firePose>0)text('퉷!',p.x+p.w/2+p.dir*47,p.y-10,18,'#fff8dd','center');ctx.restore();
+ctx.save();if(p.inv>0&&Math.floor(p.inv*12)%2)ctx.globalAlpha=.55;ellipse(p.x+p.w/2,p.y+p.h+2,34,7,'#4d443333');let col=0,row=0;if(p.firePose>0)col=1;else if(Math.abs(p.vx)>20||p.climb&&((g.input.left||g.input.right))){row=1;col=Math.floor(t*9)%2;}let rotation=0;if(p.climb){
+  const q=g.pointOn(p.climb,p.pathT);
+  // Keep face and body upright on a ceiling; only a wall climb uses a quarter-turn.
+  if(Math.abs(Math.cos(q.angle))<.4)rotation=-Math.PI/2;
+  // Fine contact strand clarifies the hanging posture without inverting the sprite.
+  if(Math.abs(Math.sin(q.angle))<.4){ctx.strokeStyle='#6c553c';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(p.x+p.w/2-18,p.y+10);ctx.lineTo(p.x+p.w/2-18,q.y);ctx.moveTo(p.x+p.w/2+18,p.y+10);ctx.lineTo(p.x+p.w/2+18,q.y);ctx.stroke();}
+}imageCell(images.ant,col,row,2,2,p.x+p.w/2-49,p.y-34,98,101,p.dir<0&&!p.climb,rotation);if(p.firePose>0)text('퉷!',p.x+p.w/2+p.dir*47,p.y-10,18,'#fff8dd','center');ctx.restore();
 for(const a of particles)ellipse(a.x,a.y,3*a.life,3*a.life,a.color);ctx.restore();
 // Foreground warmth and a fine vignette frame the miniature stage.
 const shade=ctx.createLinearGradient(0,620,0,720);shade.addColorStop(0,'#382d1800');shade.addColorStop(1,'#3a341655');ctx.fillStyle=shade;ctx.fillRect(0,620,1280,100);

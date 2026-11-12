@@ -1,0 +1,125 @@
+import { WINDS } from './stage3-engine.js?v=0.4.0';
+
+export function drawThresholdBackdrop(ctx,image,camera,width,height){
+  const sky=ctx.createLinearGradient(0,0,0,height);
+  sky.addColorStop(0,'#b7c7a4');sky.addColorStop(1,'#e6c28b');
+  ctx.fillStyle=sky;ctx.fillRect(0,0,width,height);
+  if(image.complete&&image.naturalWidth){
+    const offset=-camera*.19;
+    const tile=1680;
+    for(let i=Math.floor(-offset/tile);offset+i*tile<width;i++){
+      ctx.save();
+      ctx.translate(offset+i*tile+(i%2?tile:0),0);
+      if(i%2)ctx.scale(-1,1);
+      ctx.drawImage(image,0,-50,tile,900);
+      ctx.restore();
+    }
+  }
+  if(camera>2700){
+    const fade=ctx.createLinearGradient(0,0,width,0);
+    fade.addColorStop(0,'#68674e11');fade.addColorStop(1,'#718257a0');
+    ctx.fillStyle=fade;ctx.fillRect(0,0,width,height);
+  }
+}
+
+export function drawThresholdDetails(ctx,g,{rr,ellipse,text,doorway,imageCell,images}){
+  doorway(25,'부엌에서');
+  doorway(4190,'개미굴 입구');
+  for(const zone of WINDS){
+    const warning=g.wind<.8;
+    const active=!warning&&g.wind<2;
+    const [from,to]=zone.safe;
+    rr(from,522,to-from,14,5,'#b8956f','#745e40');
+    text('바람을 피하는 홈',(from+to)/2,508,13,'#514b34','center');
+    const fabricX=zone.from+45;
+    const bend=warning?12+Math.sin(g.time*20)*10:active?36:0;
+    ctx.beginPath();ctx.moveTo(fabricX,406);ctx.quadraticCurveTo(fabricX-8-bend,455,fabricX-bend,487);
+    ctx.lineTo(fabricX+38-bend,489);ctx.lineTo(fabricX+40,406);ctx.closePath();
+    ctx.fillStyle='#d0a373';ctx.fill();
+    if(warning||active){
+      ctx.save();ctx.globalAlpha=active?.8:.4;
+      for(let i=0;i<11;i++){
+        const x=zone.to-((i*63+g.time*(active?310:75))%(zone.to-zone.from));
+        const y=475+(i*33)%99;
+        if(x>=from&&x<=to)continue;
+        rr(x,y,active?34:14,2,1,'#fff3d4');
+        if(i%3===0)rr(x,y-5,8,5,1,'#d7a572');
+      }
+      ctx.restore();
+      text(warning?'바람 예고':'← 횡풍',(zone.from+zone.to)/2,445,16,'#704c34','center');
+    }
+  }
+
+  rr(3012,345,72,245,12,'#71563b','#473a2d');
+  rr(3022,354,48,228,8,g.gateOpen?'#71916e':'#aa8760','#d8bf8b');
+  if(!g.gateOpen){
+    ctx.beginPath();ctx.moveTo(2930,590);ctx.lineTo(2997,563);ctx.lineTo(3010,590);ctx.closePath();
+    ctx.fillStyle='#bf8057';ctx.fill();ctx.strokeStyle='#714d36';ctx.stroke();
+  }else text('열린 바깥문',3048,329,16,'#413829','center');
+
+  if(!g.duel&&g.p.x>2390){
+    const x=g.crossing?g.p.x+39:g.p.x>3760?g.p.x+72:g.gateOpen?3325:2580;
+    imageCell(images.grass,0,1,2,2,x-30,FLOOR-117,104,119,g.p.x>x);
+    text('베짱이',x+20,FLOOR-125,14,'#405d37','center');
+  }
+  if(!g.duel)return;
+  const duel=g.duel;
+  rr(4490,343,650,18,7,'#9a7448','#533e31');
+  text('베짱이 ↔ 아빠 개미',4815,211,20,'#3e3526','center');
+  imageCell(images.grass,0,1,2,2,duel.spouseX-45,239,104,104,false);
+  imageCell(images.ant,0,0,2,2,duel.fatherX-60,220-(duel.timer>1.15?Math.sin(Math.min(1,(duel.timer-1.15)/.75)*Math.PI)*30:0),126,124,true);
+  rr(duel.fatherX-9,252,29,7,3,'#384b50');
+  rr(duel.spouseX-43,224,89,6,3,'#45372b');
+  rr(duel.spouseX-43,224,89*duel.spouse/5,6,3,'#94bd6f');
+  rr(duel.fatherX-43,208,89,6,3,'#45372b');
+  rr(duel.fatherX-43,208,89*duel.father/6,6,3,'#e29d71');
+  if(duel.strike>0){
+    ellipse((duel.spouseX+duel.fatherX)/2,330,50,8,'#d68b4a91');
+    text(duel.attacker==='father'?'쿵!':'퉷!',(duel.spouseX+duel.fatherX)/2,299,21,'#965138','center');
+  }
+  if(duel.aiDone)text('대결 종료',4815,244,17,'#4d603d','center');
+  const mother=g.mother;
+  if(!mother.dead){
+    imageCell(images.ant,0,0,2,2,mother.x-17,mother.y-155,151,154,mother.dir<0);
+    rr(mother.x+34,mother.y-101,30,9,4,'#b94f67');
+    if(mother.state==='warn')text('돌진!',mother.x+58,mother.y-157,22,'#a54836','center');
+  }
+}
+
+export function drawWedding(canvas,images,id,seconds){
+  const ctx=canvas.getContext('2d');
+  const {width:w,height:h}=canvas;
+  const slide=Math.min(1,seconds/2.4);
+  ctx.clearRect(0,0,w,h);
+  const light=ctx.createLinearGradient(0,0,0,h);
+  light.addColorStop(0,'#e4d49d');light.addColorStop(1,'#927e55');
+  ctx.fillStyle=light;ctx.fillRect(0,0,w,h);
+  ctx.fillStyle='#555838';ctx.fillRect(0,187,w,63);
+  ctx.fillStyle='#7b613e';ctx.beginPath();ctx.roundRect(310,30,160,171,76);ctx.fill();
+  ctx.fillStyle='#4a4730';ctx.beginPath();ctx.roundRect(325,46,130,155,66);ctx.fill();
+  for(let i=0;i<24;i++){
+    ctx.fillStyle=i%2?'#fbebb5':'#e1a3a1';
+    ctx.fillRect(15+i*32,35+((i*37)%130)+4*Math.sin(seconds*2+i),6,4);
+  }
+  const draw=(image,col,row,x,y,width,height,flip=false,angle=0)=>{
+    if(!image.complete||!image.naturalWidth)return;
+    ctx.save();ctx.translate(x,y);ctx.rotate(angle);ctx.scale(flip?-1:1,1);
+    ctx.drawImage(image,col*image.naturalWidth/2,row*image.naturalHeight/2,image.naturalWidth/2,image.naturalHeight/2,-width/2,-height/2,width,height);
+    ctx.restore();
+  };
+  const ax=165+165*slide;
+  const gx=ax+103;
+  if(id==='carry'){
+    draw(images.grass,0,1,ax+80,140,130,129);
+    draw(images.ant,0,0,ax+37,104,85,88,false,-.27);
+  }else if(id==='drag'){
+    draw(images.grass,0,1,ax+33,175,117,105,true,-1.13);
+    draw(images.ant,0,0,ax+103,151,100,102);
+  }else{
+    draw(images.grass,0,1,gx-(id==='collar'?28:0),135,132,133,id==='perfect',id==='collar'?-.2:0);
+    draw(images.ant,0,0,ax,151,105,106);
+    if(id==='perfect'){
+      ctx.fillStyle='#fff0c8';ctx.font='24px system-ui';ctx.fillText('♥',ax+48,93);
+    }
+  }
+}

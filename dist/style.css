@@ -27,3 +27,9 @@
 .pwa-tools{position:absolute;top:18px;right:28px;z-index:3;display:flex;gap:10px}.pwa-tools button{min-height:54px;padding:11px 20px;font-size:17px;border-radius:16px;color:#eddbb4;background:#263f32e6;border-color:#b5c39970}#install-status:empty{display:none}
 
 #review-chapters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;width:min(100%,470px);margin-top:12px}#review-chapters-label{grid-column:1/-1;color:#e8cca0;font-size:15px;font-weight:700}#review-chapters button{min-height:78px;padding:8px 10px;border-color:#d6bd8d66;background:#534a356b;font-size:19px}#review-chapters button:hover{background:#685a40}
+
+#review-chapters{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-top:8px}#review-chapters button{min-height:54px}#menu{overflow:auto}
+#new-journey,#last-ending,#chapter-03-menu{font-size:16px;min-height:42px;padding:8px 12px}
+.ending-panel{width:860px;padding:23px 32px;gap:8px;text-align:center}
+#ending-art{width:100%;height:auto;display:block;border-radius:15px}
+#ending-title{margin:4px 0 0}.ending-panel p{margin:0}

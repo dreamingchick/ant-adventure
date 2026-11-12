@@ -1,4 +1,4 @@
-import { Game, makeEnemy, FLOOR } from './engine.js?v=0.3.2';
+import { Game, makeEnemy, FLOOR } from './engine.js?v=0.4.0';
 
 export const KITCHEN_WIDTH = 6450;
 export const KITCHEN_CHECKPOINTS = [
@@ -19,9 +19,9 @@ export const HAZARDS = [{ x: 1005, w: 94 }, { x: 1720, w: 54 }];
 export const DRIPS = [{ x: 2180, reach: 54 }, { x: 2585, reach: 53 }];
 export const dripPhase = time => time % 3;
 export const dripHeight = phase => phase < .9 ? 283 : 286 + Math.min(1,(phase-.9)/.22)*288;
-const GUARD_HP = 18;
+const GUARD_HP = 15;
 const PREVIOUS_GUARD_HP = 6;
-const GUARD_BALANCE = 2;
+const GUARD_BALANCE = 3;
 const WAVE_DURATION = .78;
 const segment = (x, y, w, h, type = 'stone') => ({ x, y, w, h, type });
 const createWorld = () => ({
@@ -44,6 +44,7 @@ const createWorld = () => ({
 });
 
 const kitchen = {
+  chapter: 2,
   width: KITCHEN_WIDTH, checkpoints: KITCHEN_CHECKPOINTS, areas, makeWorld: createWorld,
   bossHp: GUARD_HP, bossReward: 0, bossTrigger: 5350, arenaLeft: 5270, arenaRight: 6180,
   bossMin: 5420, bossMax: 6100, crateMin: 3030, crateMax: 3278, ropeRest: -.62,
@@ -68,9 +69,9 @@ export function cleanStage2(raw) {
   const run = raw?.run;
   if (!run || !Number.isInteger(run.cp) || !KITCHEN_CHECKPOINTS[run.cp]) return clean;
   // Keep the number of hits already landed in a pre-balance run. A defeated guard stays defeated.
-  const priorMax = raw.balance === GUARD_BALANCE ? GUARD_HP : PREVIOUS_GUARD_HP;
+  const priorMax = raw.balance === GUARD_BALANCE ? GUARD_HP : raw.balance === 2 ? 18 : PREVIOUS_GUARD_HP;
   const priorHp = Number.isInteger(run.bossHp) ? Math.max(0, Math.min(priorMax, run.bossHp)) : priorMax;
-  const bossHp = priorHp === 0 ? 0 : GUARD_HP - (priorMax - priorHp);
+  const bossHp = priorHp === 0 ? 0 : Math.max(0, GUARD_HP - (priorMax - priorHp));
   const ids = value => Array.isArray(value) ? [...new Set(value.filter(id => typeof id === 'string'))] : [];
   clean.run = {
     cp: run.cp, bossHp,

@@ -36,7 +36,7 @@ test('both chapters share one HUD, one control layout and one viewport manager',
   const [index, app, legacy] = await Promise.all(['index.html','app.js','stage2.html'].map(source));
   for (const token of ['class="vitals"', 'class="chapter"', 'id="spit-fill"', 'id="boss-health"', 'id="interact"', 'data-action="jump"'])
     assert.ok(index.includes(token), token);
-  assert.match(app, /kitchenChapter\?KitchenGame:Game/);
+  assert.match(app, /thresholdChapter\?ThresholdGame:kitchenChapter\?KitchenGame:Game/);
   assert.match(app, /mountViewport\(/);
   assert.match(legacy, /\.\/\?chapter=2/);
 });

@@ -24,7 +24,7 @@ function show(type){mode=type;clear();g.mode=type==='play'?'playing':type==='com
  if(type==='locked'){heading.textContent='제1장을 먼저 완료해 주세요';desc.textContent='거실의 베짱이 대장을 물리친 뒤 부엌으로 향할 수 있습니다.';action('거실로 돌아가기',()=>location.assign('./index.html'));return;}
  if(type==='intro'){heading.textContent='제2장 · 부엌으로 가는 길';desc.textContent='거실 밖은 부엌의 문턱. 흩어진 과자 부스러기와 베짱이 정찰대 사이를 지나 개미굴로 향하세요. 세 번째 쉼터 뒤에는 길목 경비가 기다립니다.';action('제2장 출발',resume);action('거실로 돌아가기',()=>location.assign('./index.html'));return;}
  if(type==='pause'){heading.textContent='잠시 쉬어갑니다';desc.textContent='체크포인트에 도착하면 진행 위치와 쓰러뜨린 베짱이가 저장됩니다.';action('계속하기',resume);action('체크포인트 재시작',()=>{g.reset();resume();});action('거실로 돌아가기',()=>location.assign('./index.html'));return;}
- if(type==='complete'){heading.textContent='제2장 완료!';desc.textContent='부엌의 경비를 통과했습니다. 기록 '+format(g.elapsed)+' · 제3장은 추후 개방됩니다.';action('다시 도전',()=>{g.data.checkpoint=90;g.data.dead=[];g.data.elapsed=0;g.reset();resume();});action('거실로 돌아가기',()=>location.assign('./index.html'));action('가루 오락실 대문',()=>location.assign(HUB));}
+ if(type==='complete'){heading.textContent='제2장 완료!';desc.textContent='부엌의 경비를 통과했습니다. 기록 '+format(g.data.best||g.elapsed)+' · 제3장은 추후 개방됩니다.';action('다시 도전',()=>{g.data.checkpoint=90;g.data.dead=[];g.data.elapsed=0;g.reset();resume();});action('거실로 돌아가기',()=>location.assign('./index.html'));action('가루 오락실 대문',()=>location.assign(HUB));}
 }
 function resume(){mode='play';g.mode='playing';$('#modal').hidden=true;clear();}
 $('#pause').onclick=()=>{if(mode==='play')show('pause');else if(mode==='pause')resume();};

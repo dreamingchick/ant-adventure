@@ -114,3 +114,20 @@ test('ending boundaries and untracked legacy saves do not grant a perfect result
   assert.equal(endingFor(legacy),'ordinary');
   assert.equal(cleanStage3({run:{cp:2,bossHp:1}}).run.bossHp,12);
 });
+
+test('rendering the spouse at the laundry basket keeps the stage drawable', async () => {
+  const {drawThresholdDetails}=await import('../dist/stage3-view.js');
+  const game=new ThresholdGame(freshProfile());
+  game.start();
+  game.p.x=2391;
+  const noop=()=>{};
+  const ctx={save:noop,restore:noop,beginPath:noop,moveTo:noop,quadraticCurveTo:noop,lineTo:noop,closePath:noop,fill:noop,stroke:noop};
+  const sprite={};
+  const drawn=[];
+  const view={rr:noop,ellipse:noop,text:noop,doorway:noop,images:{grass:sprite},
+    imageCell:(image,...args)=>drawn.push({image,y:args[5]})};
+  drawThresholdDetails(ctx,game,view);
+  assert.equal(drawn.length,1);
+  assert.equal(drawn[0].image,sprite);
+  assert.equal(drawn[0].y,473);
+});

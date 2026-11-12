@@ -1,5 +1,5 @@
-import { Game, makeEnemy, FLOOR } from './engine.js?v=0.4.0';
-import { endingFor } from './journey.js?v=0.4.0';
+import { Game, makeEnemy, FLOOR } from './engine.js?v=0.4.1';
+import { endingFor } from './journey.js?v=0.4.1';
 
 export const WINDS = [
   { from: 730, to: 1160, safe: [875, 985], force: -145 },

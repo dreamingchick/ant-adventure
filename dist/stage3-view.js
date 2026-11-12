@@ -1,4 +1,5 @@
-import { WINDS } from './stage3-engine.js?v=0.4.0';
+import { FLOOR } from './engine.js?v=0.4.1';
+import { WINDS } from './stage3-engine.js?v=0.4.1';
 
 export function drawThresholdBackdrop(ctx,image,camera,width,height){
   const sky=ctx.createLinearGradient(0,0,0,height);

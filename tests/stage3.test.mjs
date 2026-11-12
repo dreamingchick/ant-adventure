@@ -94,57 +94,54 @@ test('a player defeat retries the mother and keeps the father duel outcome',()=>
   assert.deepEqual(game.profile.endings,['ordinary']);
 });
 
-test('three timed cheers let the grasshopper beat the favored father without cross-lane damage',()=>{
-  const game=atFinale({...newJourney(),next:3});
-  game.duel.advantage='father';
-  game.p.inv=100;
-  const motherHp=game.mother.hp;
-  assert.equal(game.getInteraction().disabled,true);
-  game.interact();
-  assert.equal(game.duel.cheersLeft,3);
-  for(let i=0;i<1800&&!game.duel.aiDone;i++){
-    if(game.canCheer){
-      const previous=game.duel.cheersLeft;
-      game.interact();
-      game.interact();
-      assert.equal(game.duel.cheersLeft,previous-1);
+test('the grasshopper needs all three timed cheers to win without cross-lane damage',()=>{
+  for(let target=0;target<=3;target++){
+    const game=atFinale({...newJourney(),next:3});
+    game.p.inv=100;
+    const motherHp=game.mother.hp;
+    assert.equal(game.getInteraction().disabled,true);
+    game.interact();
+    assert.equal(game.duel.cheersLeft,3);
+    for(let i=0;i<1800&&!game.duel.aiDone;i++){
+      if(game.canCheer&&3-game.duel.cheersLeft<target){
+        const previous=game.duel.cheersLeft;
+        game.interact();
+        game.interact();
+        assert.equal(game.duel.cheersLeft,previous-1);
+      }
+      tick(game);
     }
-    tick(game);
+    assert.equal(game.duel.cheersLeft,3-target);
+    assert.equal(game.duel.father===0,target===3);
+    assert.equal(game.duel.spouse===0,target<3);
+    assert.equal(game.mother.hp,motherHp);
+    assert.equal(game.p.hp,game.maxHp);
+    defeatMother(game);
+    assert.equal(game.profile.journey.ending,target===3?'perfect':'collar');
   }
-  assert.equal(game.duel.cheersLeft,0);
-  assert.equal(game.duel.father,0);
-  assert.ok(game.duel.spouse>0);
-  assert.equal(game.mother.hp,motherHp);
-  assert.equal(game.p.hp,game.maxHp);
-  defeatMother(game);
-  assert.equal(game.profile.journey.ending,'perfect');
 });
 
 test('elapsed time cannot award an ending while the mother is undefeated',()=>{
   const game=atFinale({...newJourney(),next:3});
-  game.duel.advantage='spouse';
   game.p.inv=100;
   tick(game,60*30);
-  assert.equal(game.duel.father,0);
+  assert.equal(game.duel.spouse,0);
   assert.equal(game.duel.playerDone,false);
   assert.equal(game.mode,'playing');
   assert.equal(game.progress.cleared,false);
   defeatMother(game);
-  assert.equal(game.profile.journey.ending,'perfect');
+  assert.equal(game.profile.journey.ending,'collar');
 });
 
-test('a mother victory lets the upper duel settle within three seconds, then chooses the matching ending',()=>{
-  for(const [advantage,id] of [['father','collar'],['spouse','perfect']]){
-    const game=atFinale({...newJourney(),next:3,hits:9});
-    game.duel.advantage=advantage;
-    defeatMother(game);
-    assert.equal(game.duel.playerDone,true);
-    assert.equal(game.mode,'playing');
-    tick(game,180);
-    assert.equal(game.mode,'result');
-    assert.equal(game.profile.journey.ending,id);
-    assert.deepEqual(game.profile.endings,[id]);
-  }
+test('a mother victory lets the upper duel settle within three seconds',()=>{
+  const game=atFinale({...newJourney(),next:3,hits:9});
+  defeatMother(game);
+  assert.equal(game.duel.playerDone,true);
+  assert.equal(game.mode,'playing');
+  tick(game,180);
+  assert.equal(game.mode,'result');
+  assert.equal(game.profile.journey.ending,'collar');
+  assert.deepEqual(game.profile.endings,['collar']);
 });
 
 test('the dressed companion follows the ant and faces it from either side after the crossing',()=>{

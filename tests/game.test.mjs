@@ -1,5 +1,6 @@
 import test from 'node:test';import assert from 'node:assert/strict';import {Game,freshProfile,sanitize,COSTS}from'../dist/engine.js';
 import {KitchenGame} from '../dist/stage2-engine.js';
+import {ThresholdGame,DUEL_DECK_Y} from '../dist/stage3-engine.js';
 const run=()=>{const g=new Game();g.start();return g;};const tick=(g,n=60)=>{for(let i=0;i<n;i++)g.update(1/60);};
 
 for (const [chapter,GameType] of [[1,Game],[2,KitchenGame]]) {
@@ -18,6 +19,58 @@ for (const [chapter,GameType] of [[1,Game],[2,KitchenGame]]) {
       assert.equal(game.p.hp,game.maxHp-1);
       assert.ok(boss.x>=game.stage.arenaLeft+20);
       assert.ok(boss.x+boss.w<=game.stage.arenaRight);
+    });
+  }
+}
+
+for (const [chapter,GameType] of [[2,KitchenGame],[3,ThresholdGame]]) {
+  for (const direction of ['right','left']) {
+    test(`chapter ${chapter} ledge gives room to jump over the boss going ${direction}`,()=>{
+      const game=new GameType(freshProfile());
+      game.start();
+      game.bossActive=game.bossIntro=game.arena=true;
+      const {p}=game;
+      const boss=game.enemies.find(enemy=>enemy.boss);
+      const ledges=game.world.solids.filter(s=>s.type==='wood'&&s.x>game.stage.bossTrigger&&s.y>=470);
+      const right=direction==='right';
+      const ledge=right?ledges[0]:ledges.at(-1);
+      const deck=game.world.solids.find(s=>s.y===DUEL_DECK_Y);
+      if(chapter===3){
+        assert.equal(deck.x,game.stage.arenaLeft);
+        assert.equal(deck.x+deck.w,game.stage.arenaRight);
+      }
+      p.x=right?ledge.x-p.w-3:ledge.x+ledge.w+3;
+      p.inv=0;
+      boss.x=right?ledge.x+ledge.w+28:ledge.x-boss.w-28;
+      boss.state='rest';
+      boss.timer=99;
+      const step=()=>{
+        tick(game,1);
+        if(deck)assert.ok(p.y>=deck.y+deck.h);
+      };
+      game.input.jump=true;
+      game.jump();
+      const nearCenter=()=>right?p.x>=ledge.x+20:p.x+p.w<=ledge.x+ledge.w-20;
+      for(let frame=0;frame<75&&!p.ground;frame++){
+        game.input[direction]=p.y+p.h<ledge.y-5&&!nearCenter();
+        step();
+      }
+      assert.equal(p.y+p.h,ledge.y);
+      assert.equal(p.hp,game.maxHp);
+      game.input[direction]=true;
+      const atLaunch=()=>right?p.x>=ledge.x+ledge.w-p.w:p.x<=ledge.x;
+      for(let frame=0;frame<45&&!atLaunch();frame++)step();
+      assert.ok(p.ground);
+      boss.state='warn';
+      boss.pattern=1;
+      boss.timer=.12;
+      boss.dir=right?-1:1;
+      game.jump();
+      const crossed=()=>right?p.x>=boss.x+boss.w:p.x+p.w<=boss.x;
+      for(let frame=0;frame<75&&!crossed();frame++)step();
+      assert.ok(crossed());
+      assert.equal(boss.state,'charge');
+      assert.equal(p.hp,game.maxHp);
     });
   }
 }

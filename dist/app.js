@@ -1,12 +1,12 @@
 import {initPwa} from './pwa.js';
 import {mountNameKeyboard} from './name-keyboard.js';
 import {mountViewport} from './viewport.js';
-import {Game,freshProfile,sanitize,WIDTH,HEIGHT,FLOOR,COSTS,LEVELS} from './engine.js?v=1.0.1';
-import {KitchenGame,cleanStage2} from './stage2-engine.js?v=1.0.1';
-import {drawKitchenBackdrop,drawKitchenDetails} from './stage2-view.js?v=1.0.1';
-import {ThresholdGame,cleanStage3} from './stage3-engine.js?v=1.0.1';
-import {drawThresholdBackdrop,drawThresholdDetails,drawBridalDress} from './stage3-view.js?v=1.0.1';
-import {ENDINGS,newJourney,restoreJourney} from './journey.js?v=1.0.1';
+import {Game,freshProfile,sanitize,WIDTH,HEIGHT,FLOOR,COSTS,LEVELS} from './engine.js?v=1.0.2';
+import {KitchenGame,cleanStage2} from './stage2-engine.js?v=1.0.2';
+import {drawKitchenBackdrop,drawKitchenDetails} from './stage2-view.js?v=1.0.2';
+import {ThresholdGame,cleanStage3} from './stage3-engine.js?v=1.0.2';
+import {drawThresholdBackdrop,drawThresholdDetails,drawBridalDress} from './stage3-view.js?v=1.0.2';
+import {ENDINGS,newJourney,restoreJourney} from './journey.js?v=1.0.2';
 import {createProfileStore} from './profile-store.js';
 const $=s=>document.querySelector(s),canvas=$('#game'),ctx=canvas.getContext('2d');
 const params=new URLSearchParams(location.search);
@@ -62,11 +62,11 @@ if(event.type==='boss-intro')dialog(thresholdChapter?[
   ['엄마 개미','이제야 돌아왔네. 네 이야기는 내가 직접 듣겠다!'],
   ['아빠 개미','베짱이, 넌 나하고 이야기 좀 하자.'],
   ['안내','엄마 개미를 쓰러뜨려야 엔딩으로 이어집니다. 베짱이의 승패와 누적 사망 횟수에 따라 결말이 달라집니다.'],
-  ['안내','위쪽에서 아빠 개미가 돌진할 때 응원 버튼이 켜집니다. X 또는 응원 버튼을 누르면 베짱이가 반격합니다. 한 대결에 3회까지 응원할 수 있어요.'],
+  ['안내','아래쪽 발판에서 뛰어 엄마 개미를 넘으세요. 위쪽 대결은 베짱이가 맡습니다. 아빠 개미가 돌진할 때 응원 버튼이나 X를 3번 맞춰 누르면 베짱이가 승리할 수 있어요.'],
 ]:kitchenChapter?[
   ['길목 경비','거실 문을 통과했다고? 여기서 한 번 더 멈춰!'],
   [profile.name,'난 개미굴로 가는 길을 찾고 있다고!'],
-  ['안내','침을 '+game.stage.bossHp+'번 맞히세요. 착지 표시에서 벗어나고 바닥 충격파는 점프로 넘으세요.'],
+  ['안내','침을 '+game.stage.bossHp+'번 맞히세요. 발판에서 뛰어 경비를 넘고, 착지 표시와 바닥 충격파를 피하세요.'],
 ]:[['베짱이 대장','네가 우리 애들한테 침 뱉고 다닌다는 그 개미냐?'],[profile.name,'다닌다니. 나도 지금 길을 잃었거든.'],['베짱이 대장','이 문을 지나려면, 나부터 넘어 봐라!'],['안내','침 공격을 14번 명중시키면 승리합니다. 재도전해도 대장이 받은 피해는 유지됩니다.']],()=>{game.mode='playing';});if(event.type==='result'){
   if(thresholdChapter){
     if(game.endingResult.id)showEnding(game.endingResult,()=>result(event));
@@ -316,6 +316,7 @@ if(thresholdChapter){
   document.title='개미의 모험 — 바람이 드는 문턱';
   $('#hud .chapter small').textContent='CHAPTER 03';
   $('#game').setAttribute('aria-label','문틈을 지나 개미굴 입구로 이동하세요');
+  $('#boss-hud').classList.add('finale-hud');
   $('#boss-name').textContent='주인공 개미 ↔ 엄마 개미';
   $('#result .result-panel > small').textContent='CHAPTER 03 COMPLETE';
   $('#result h2').textContent='개미굴에 돌아왔어요.';

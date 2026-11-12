@@ -1,5 +1,5 @@
-import { Game, makeEnemy, FLOOR, WIDTH } from './engine.js?v=1.0.1';
-import { endingFor } from './journey.js?v=1.0.1';
+import { Game, makeEnemy, FLOOR, WIDTH } from './engine.js?v=1.0.2';
+import { endingFor } from './journey.js?v=1.0.2';
 
 export const WINDS = [
   { from: 730, to: 1160, safe: [875, 985], force: -145 },
@@ -9,6 +9,9 @@ export const windPhase = time => time % 3.5;
 const MOTHER_HP = 12;
 const DUEL_SETTLE_SPEED = 6;
 const CHEER_WINDOW = [1.05,1.83];
+const ARENA_LEFT = 4290;
+const ARENA_RIGHT = 5360;
+export const DUEL_DECK_Y = 260;
 const GATE_X = 3040;
 const checkpoints = [
   { x:105,y:FLOOR,name:'부엌 뒤 문턱' },
@@ -22,6 +25,8 @@ const makeWorld = () => ({
     platform(420,538,115,52),platform(1515,460,125,26,'wood'),
     platform(1960,448,610,24,'wood'),platform(1900,517,100,23,'wood'),
     platform(3695,500,115,26,'wood'),
+    platform(4460,500,112,22,'wood'),platform(5060,500,112,22,'wood'),
+    platform(ARENA_LEFT,DUEL_DECK_Y,ARENA_RIGHT-ARENA_LEFT,18,'wood'),
   ],
   paths: [{id:'shelf',points:[{x:1170,y:548},{x:1170,y:410},{x:1530,y:410}],slip:false}],
   crate: {x:-600,y:580,w:1,h:1},
@@ -40,7 +45,7 @@ const stage = {
     {x:3920,title:'흙길 입구',hint:'베짱이와 함께 개미굴 입구로 가세요'},
     {x:4320,title:'개미굴 입구',hint:'엄마 개미와 대결하세요. 위쪽 대결은 베짱이가 맡습니다.'},
   ],
-  bossHp:MOTHER_HP,bossReward:0,bossTrigger:4350,arenaLeft:4290,arenaRight:5360,
+  bossHp:MOTHER_HP,bossReward:0,bossTrigger:4350,arenaLeft:ARENA_LEFT,arenaRight:ARENA_RIGHT,
   bossMin:4340,bossMax:5330,crateMin:-600,crateMax:-600,ropeRest:0,
   enemies:()=>[
     makeEnemy('patrol','normal',2120,1),makeMother(),
@@ -54,9 +59,7 @@ const range = (x,a,b) => x>=a && x<=b;
 const toward = (a,b,speed) => a+Math.sign(b-a)*Math.min(Math.abs(b-a),speed);
 const duelPairs = { player:'mother',mother:'player',spouse:'father',father:'spouse' };
 export const canDuelHit = (source,target) => Object.hasOwn(duelPairs,source)&&duelPairs[source]===target;
-const nextDuelAttacker = duel => (duel.round+1)%3===0
-  ? (duel.advantage==='father'?'spouse':'father')
-  : duel.advantage;
+const nextDuelAttacker = duel => (duel.round+1)%3===0?'spouse':'father';
 
 export function cleanStage3(raw) {
   const state = {cleared:raw?.cleared===true,best:Number.isFinite(raw?.best)&&raw.best>0?raw.best:null,bestLevels:raw?.bestLevels??null,bossReward:false,run:null};
@@ -200,7 +203,7 @@ export class ThresholdGame extends Game {
 
   startDuel(){
     this.duel={playerDone:false,spouse:5,father:6,aiDone:false,
-      timer:0,round:0,spouseX:4590,fatherX:4980,strike:0,advantage:Math.random()<.5?'father':'spouse',
+      timer:0,round:0,spouseX:4590,fatherX:4980,strike:0,
       cheersLeft:3,cheered:false};
   }
 

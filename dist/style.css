@@ -44,3 +44,7 @@
  #ending-list button{min-height:64px}
  #ending-list button small{font-size:18px}
 }
+
+#boss-hud.finale-hud{top:80px;padding:5px 16px;font-size:15px}
+#boss-hud.finale-hud #boss-health{height:10px;margin-top:4px}
+#boss-hud.finale-hud .boss-remaining{margin-top:3px}

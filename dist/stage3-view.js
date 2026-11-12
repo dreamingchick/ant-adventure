@@ -1,5 +1,5 @@
-import { FLOOR } from './engine.js?v=1.0.1';
-import { WINDS } from './stage3-engine.js?v=1.0.1';
+import { FLOOR } from './engine.js?v=1.0.2';
+import { DUEL_DECK_Y, WINDS } from './stage3-engine.js?v=1.0.2';
 
 function garment(ctx,fill,stroke,trace){
   ctx.beginPath();
@@ -136,20 +136,20 @@ export function drawThresholdDetails(ctx,g,{rr,ellipse,text,doorway,imageCell,im
   }
   if(!g.duel)return;
   const duel=g.duel;
-  rr(4490,343,650,18,7,'#9a7448','#533e31');
-  text('베짱이 ↔ 아빠 개미',4815,211,20,'#3e3526','center');
-  imageCell(images.grass,0,1,2,2,duel.spouseX-52,239,104,104,duel.fatherX>duel.spouseX,0,drawTuxedo);
-  imageCell(images.ant,0,0,2,2,duel.fatherX-60,220-(duel.timer>1.15?Math.sin(Math.min(1,(duel.timer-1.15)/.75)*Math.PI)*30:0),126,124,true);
-  rr(duel.fatherX-9,252,29,7,3,'#384b50');
-  rr(duel.spouseX-43,224,89,6,3,'#45372b');
-  rr(duel.spouseX-43,224,89*duel.spouse/5,6,3,'#94bd6f');
-  rr(duel.fatherX-43,208,89,6,3,'#45372b');
-  rr(duel.fatherX-43,208,89*duel.father/6,6,3,'#e29d71');
+  const deck=DUEL_DECK_Y;
+  text('베짱이 ↔ 아빠 개미',4815,deck-26,20,'#3e3526','center');
+  imageCell(images.grass,0,1,2,2,duel.spouseX-52,deck-104,104,104,duel.fatherX>duel.spouseX,0,drawTuxedo);
+  imageCell(images.ant,0,0,2,2,duel.fatherX-60,deck-123-(duel.timer>1.15?Math.sin(Math.min(1,(duel.timer-1.15)/.75)*Math.PI)*30:0),126,124,true);
+  rr(duel.fatherX-9,deck-91,29,7,3,'#384b50');
+  rr(duel.spouseX-43,deck-110,89,6,3,'#45372b');
+  rr(duel.spouseX-43,deck-110,89*duel.spouse/5,6,3,'#94bd6f');
+  rr(duel.fatherX-43,deck-110,89,6,3,'#45372b');
+  rr(duel.fatherX-43,deck-110,89*duel.father/6,6,3,'#e29d71');
   if(duel.strike>0){
-    ellipse((duel.spouseX+duel.fatherX)/2,330,50,8,'#d68b4a91');
-    text(duel.attacker==='father'?'쿵!':'퉷!',(duel.spouseX+duel.fatherX)/2,299,21,'#965138','center');
+    ellipse((duel.spouseX+duel.fatherX)/2,deck-13,50,8,'#d68b4a91');
+    text(duel.attacker==='father'?'쿵!':'퉷!',(duel.spouseX+duel.fatherX)/2,deck-44,21,'#965138','center');
   }
-  if(duel.aiDone)text(duel.father===0?'베짱이 승리':'아빠 개미 승리',4815,244,17,'#4d603d','center');
+  if(duel.aiDone)text(duel.father===0?'베짱이 승리':'아빠 개미 승리',4815,deck-5,17,'#4d603d','center');
   const mother=g.mother;
   if(!mother.dead){
     imageCell(images.ant,0,0,2,2,mother.x-17,mother.y-155,151,154,mother.dir<0);

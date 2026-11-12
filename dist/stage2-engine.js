@@ -1,4 +1,4 @@
-import { Game, makeEnemy, FLOOR } from './engine.js?v=1.0.1';
+import { Game, makeEnemy, FLOOR } from './engine.js?v=1.0.2';
 
 export const KITCHEN_WIDTH = 6450;
 export const KITCHEN_CHECKPOINTS = [
@@ -32,6 +32,7 @@ const createWorld = () => ({
     segment(2030,525,95,65), segment(2300,505,115,85), segment(2700,520,112,70),
     segment(3360,380,110,210,'wood'), segment(4035,395,180,28,'wood'),
     segment(4315,497,126,26), segment(4940,504,97,86),
+    segment(5465,475,128,22,'wood'), segment(5895,475,128,22,'wood'),
   ],
   paths: [
     { id: 'cabinet', points: [{x:1213,y:552},{x:1213,y:357},{x:1665,y:357}], slip: false },

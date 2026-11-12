@@ -1,7 +1,7 @@
-const VERSION='0.3.0';
+const VERSION='0.3.1';
 const PREFIX='ant-adventure-shell-';
 const CACHE=PREFIX+VERSION+'-chapters';
-const ASSETS=['./','./index.html','./stage2.html','./stage2-engine.js?v='+VERSION,'./stage2-view.js','./profile-store.js','./style.css?v='+VERSION,'./app.js?v='+VERSION,'./engine.js?v='+VERSION,'./viewport.js','./name-keyboard.js','./pwa.js','./manifest.webmanifest','./assets/ant-original.webp','./assets/grasshoppers.webp','./assets/living-room.webp','./assets/kitchen.webp','./icons/icon-192.png','./icons/icon-512.png','./icons/icon-maskable-512.png','./icons/apple-touch-icon.png'];
+const ASSETS=['./','./index.html','./stage2.html','./stage2-engine.js?v='+VERSION,'./stage2-view.js?v='+VERSION,'./profile-store.js','./style.css?v='+VERSION,'./app.js?v='+VERSION,'./engine.js?v='+VERSION,'./viewport.js','./name-keyboard.js','./pwa.js','./manifest.webmanifest','./assets/ant-original.webp','./assets/grasshoppers.webp','./assets/living-room.webp','./assets/kitchen.webp','./icons/icon-192.png','./icons/icon-512.png','./icons/icon-maskable-512.png','./icons/apple-touch-icon.png'];
 const urls=ASSETS.map(path=>new URL(path,self.registration.scope).href);
 self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(urls.map(url=>new Request(url,{cache:'reload'})))));});
 // Wait for the player to choose an update; never reload a running boss fight.

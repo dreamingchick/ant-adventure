@@ -1,15 +1,15 @@
 import {initPwa} from './pwa.js';
 import {mountNameKeyboard} from './name-keyboard.js';
 import {mountViewport} from './viewport.js';
-import {Game,freshProfile,sanitize,WIDTH,HEIGHT,FLOOR,COSTS,LEVELS} from './engine.js?v=0.3.0';
-import {KitchenGame,cleanStage2} from './stage2-engine.js?v=0.3.0';
-import {drawKitchenBackdrop,drawKitchenDetails} from './stage2-view.js';
+import {Game,freshProfile,sanitize,WIDTH,HEIGHT,FLOOR,COSTS,LEVELS} from './engine.js?v=0.3.1';
+import {KitchenGame,cleanStage2} from './stage2-engine.js?v=0.3.1';
+import {drawKitchenBackdrop,drawKitchenDetails} from './stage2-view.js?v=0.3.1';
 import {createProfileStore} from './profile-store.js';
 const $=s=>document.querySelector(s),canvas=$('#game'),ctx=canvas.getContext('2d');
 const params=new URLSearchParams(location.search);
 const reviewHost=['ant-adventure-chapter-review.snugbrink3.chatgpt.site','localhost','127.0.0.1'].includes(location.hostname);
-const review=reviewHost&&['climb','wet','kitchen'].includes(params.get('review')) ? params.get('review') : null;
-const kitchenChapter=params.get('chapter')==='2'||review==='kitchen';
+const review=reviewHost&&['climb','wet','kitchen','boss1','boss2'].includes(params.get('review')) ? params.get('review') : null;
+const kitchenChapter=params.get('chapter')==='2'||review==='kitchen'||review==='boss2';
 const SAVE_KEY=review ? 'ant-adventure-review-v1-'+review : 'ant-adventure-save-v1';
 let profile,store;
 try{
@@ -18,7 +18,7 @@ try{
   profile=sanitize(raw);
   if(raw?.chapter2)profile.chapter2=cleanStage2(raw.chapter2);
 }catch{profile=freshProfile();}
-if(review==='kitchen')profile.cleared=true;
+if(review==='kitchen'||review==='boss2')profile.cleared=true;
 let toastTimer,dialogDone=()=>{},lines=[],lineIndex=0,helpReturn='menu',last=0,frame=0,particles=[],audio=null,musicTimer=0,note=0,saveWarning=false;
 const images={};for(const [key,path]of Object.entries({ant:'ant-original.webp',room:'living-room.webp',kitchen:'kitchen.webp',grass:'grasshoppers.webp'})){const im=new Image();im.src='assets/'+path;images[key]=im;}
 async function persist(){
@@ -40,7 +40,7 @@ const GameType=kitchenChapter?KitchenGame:Game;
 const game=new GameType(profile,event=>{if(event.type==='save')persist();if(event.type==='toast')toast(event.text);if(event.type==='sound')sound(event.name);if(event.type==='spark')for(let i=0;i<8;i++)particles.push({x:event.x,y:event.y,vx:(Math.random()-.5)*150,vy:-Math.random()*130,life:.5,color:'#fff1b5'});if(event.type==='death')for(let i=0;i<10;i++)particles.push({x:game.p.x,y:game.p.y,vx:(Math.random()-.5)*180,vy:-Math.random()*170,life:.7,color:'#f5ad91'});if(event.type==='boss-intro')dialog(kitchenChapter?[
   ['길목 경비','거실 문을 통과했다고? 여기서 한 번 더 멈춰!'],
   [profile.name,'난 개미굴로 가는 길을 찾고 있다고!'],
-  ['안내','침을 6번 맞힌 뒤 오른쪽 문턱을 통과하세요. 받은 피해는 재도전에도 유지됩니다.'],
+  ['안내','침을 '+game.stage.bossHp+'번 맞히세요. 착지 표시에서 벗어나고 바닥 충격파는 점프로 넘으세요.'],
 ]:[['베짱이 대장','네가 우리 애들한테 침 뱉고 다닌다는 그 개미냐?'],[profile.name,'다닌다니. 나도 지금 길을 잃었거든.'],['베짱이 대장','이 문을 지나려면, 나부터 넘어 봐라!'],['안내','침 공격을 14번 명중시키면 승리합니다. 재도전해도 대장이 받은 피해는 유지됩니다.']],()=>{game.mode='playing';});if(event.type==='result'){
   if(kitchenChapter){
     clearInputs();
@@ -152,19 +152,53 @@ doorway(7630,'거실 밖');
 }
 for(const e of g.enemies){if(e.dead||e.x+e.w<g.camera-100||e.x>g.camera+WIDTH+100)continue;const walk=e.state==='walk'?Math.sin(t*(e.type==='thin'?16:8))*2:0;ellipse(e.x+e.w/2,e.y+3,e.w*.55,7,'#34492330');const cell=e.type==='fat'||e.boss?[0,0]:e.type==='thin'?[1,0]:e.type==='smart'?[1,1]:[0,1];const w=e.boss?235:e.type==='fat'?118:94,h=e.boss?225:120;ctx.save();if(e.stun>0)ctx.globalAlpha=.65;imageCell(images.grass,...cell,2,2,e.x+e.w/2-w/2,e.y-h+walk,w,h,e.dir>0);ctx.restore();if(e.boss){text('♛',e.x+e.w/2,e.y-h-3,30,'#bb813c','center');}else{const names={normal:'평범한 베짱이',fat:'뚱뚱한 베짱이',thin:'마른 베짱이',smart:'똑똑한 베짱이'};text(names[e.type],e.x+e.w/2,e.y-h-8,11,'#485936','center');rr(e.x+e.w/2-20,e.y-h,40,4,2,'#526b3d33');rr(e.x+e.w/2-20,e.y-h,40*e.hp/e.max,4,2,'#71975a');}if(kitchenChapter&&e.boss&&e.state==='warn'){
   const charge=e.pattern%2===1;
-  if(!charge)ellipse(e.x+e.w/2,FLOOR-3,82,10,'#a1483680');
+  if(!charge){
+    const landing=e.landing+e.w/2;
+    ellipse(landing,FLOOR-4,82,11,'#a1483699');
+    text('착지 지점',landing,FLOOR-19,16,'#853e31','center');
+  }
   text(charge?'돌진':'내려찍기',e.x+e.w/2,e.y-h-58,18,'#9a3d2d','center');
 }if(e.state==='warn'||e.state==='aim'){text(e.state==='aim'?'⌖':'!',e.x+e.w/2,e.y-h-30,30,'#b75037','center');if(e.state==='aim'){ctx.save();ctx.strokeStyle='#be5e4b88';ctx.setLineDash([4,9]);ctx.beginPath();ctx.moveTo(e.x+e.w/2,e.y-55);ctx.lineTo(e.x+e.w/2+e.dir*400,e.y-55);ctx.stroke();ctx.restore();}}if(e.boss&&e.state==='rest')text('헉… 헉…',e.x+e.w/2,e.y-h-30,17,'#715842','center');}
+for(const wave of g.guardWaves??[]){
+  ellipse(wave.x,FLOOR-2,31,6,'#a95030a0');
+  ctx.save();ctx.translate(wave.x,FLOOR);ctx.scale(wave.dir,1);
+  ctx.beginPath();ctx.moveTo(-25,-2);ctx.quadraticCurveTo(0,-8,14,-27);
+  ctx.quadraticCurveTo(16,-10,27,-2);ctx.closePath();ctx.fillStyle='#b8502f';ctx.fill();
+  ctx.lineWidth=3;ctx.strokeStyle='#fff1c1';ctx.stroke();ctx.restore();
+}
 for(const s of g.shots){ellipse(s.x-s.vx*.008,s.y,13,4,'#ebfbef99');ellipse(s.x,s.y,8,7,'#bfe7d9');ellipse(s.x-2,s.y-2,3,2,'#fff');}for(const s of g.seeds){ellipse(s.x,s.y,9,5,'#83613c');}
 // Exact original ant sprite sheet from Chacha, let's wash.
 ctx.save();if(p.inv>0&&Math.floor(p.inv*12)%2)ctx.globalAlpha=.55;ellipse(p.x+p.w/2,p.y+p.h+2,34,7,'#4d443333');let col=0,row=0;if(p.firePose>0)col=1;else if(Math.abs(p.vx)>20||p.climb&&((g.input.left||g.input.right))){row=1;col=Math.floor(t*9)%2;}imageCell(images.ant,col,row,2,2,p.x+p.w/2-49,p.y-34,98,101,p.dir<0);if(p.firePose>0)text('퉷!',p.x+p.w/2+p.dir*47,p.y-10,18,'#fff8dd','center');ctx.restore();
 for(const a of particles)ellipse(a.x,a.y,3*a.life,3*a.life,a.color);ctx.restore();
 // Foreground warmth and a fine vignette frame the miniature stage.
 const shade=ctx.createLinearGradient(0,620,0,720);shade.addColorStop(0,'#382d1800');shade.addColorStop(1,'#3a341655');ctx.fillStyle=shade;ctx.fillRect(0,620,1280,100);
-if(game.mode!=='menu'){const area=[...g.stage.areas].reverse().find(a=>p.x>=a.x)||AREAS[0];$('#area-name').textContent=area.title;$('#hint').textContent=area.hint;$('#hearts').textContent='♥'.repeat(Math.max(0,p.hp))+'♡'.repeat(Math.max(0,game.maxHp-p.hp));$('#spit-fill').style.width=(p.spit/game.maxSpit*100)+'%';$('#sugar-count').textContent=profile.bank;$('#pending').textContent=game.pending.size?' +'+game.pending.size+' 미확정':'';$('#clock').textContent=time(game.elapsed);$('#route-fill').style.width=Math.min(100,p.x/g.stage.width*100)+'%';const interaction=game.getInteraction(),ib=$('#interact');ib.hidden=!interaction;if(interaction)ib.innerHTML=interaction.label+'<small>X</small>';const ab=$('[data-action="attack"]');ab.disabled=!!p.climb||p.rope||p.spit<25;$('#boss-hud').hidden=!game.bossActive||game.mode==='result';if(game.bossActive){$('#hint').hidden=true;const b=game.enemies.find(e=>e.boss);$('#boss-fill').style.width=b.hp/b.max*100+'%';$('#boss-remaining').textContent='남은 명중 '+Math.max(0,b.hp)+'회 / '+b.max+'회';}else if(game.mode==='playing')$('#hint').hidden=false;}
+if(game.mode!=='menu'){const area=[...g.stage.areas].reverse().find(a=>p.x>=a.x)||g.stage.areas[0];$('#area-name').textContent=area.title;$('#hint').textContent=area.hint;$('#hearts').textContent='♥'.repeat(Math.max(0,p.hp))+'♡'.repeat(Math.max(0,game.maxHp-p.hp));$('#spit-fill').style.width=(p.spit/game.maxSpit*100)+'%';$('#sugar-count').textContent=profile.bank;$('#pending').textContent=game.pending.size?' +'+game.pending.size+' 미확정':'';$('#clock').textContent=time(game.elapsed);$('#route-fill').style.width=Math.min(100,p.x/g.stage.width*100)+'%';const interaction=game.getInteraction(),ib=$('#interact');ib.hidden=!interaction;if(interaction)ib.innerHTML=interaction.label+'<small>X</small>';const ab=$('[data-action="attack"]');ab.disabled=!!p.climb||p.rope||p.spit<25;renderBossHud(g);}
+}
+function renderBossHud(g){
+  const active=g.bossActive&&(g.mode==='playing'||g.mode==='dialog');
+  const panel=$('#boss-hud');
+  panel.hidden=!active;
+  if(!active){
+    if(g.mode==='playing')$('#hint').hidden=false;
+    return;
+  }
+  $('#hint').hidden=true;
+  const boss=g.enemies.find(enemy=>enemy.boss);
+  const bar=$('#boss-health');
+  if(bar.max!==boss.max)bar.max=boss.max;
+  if(bar.value!==boss.hp)bar.value=boss.hp;
+  const label='남은 명중 '+boss.hp+'회 / '+boss.max+'회';
+  if($('#boss-remaining').textContent!==label)$('#boss-remaining').textContent=label;
 }
 function loop(timestamp){const dt=last?Math.min(.25,(timestamp-last)/1000):.016;last=timestamp;let remaining=dt;while(remaining>0){const step=Math.min(1/60,remaining);game.update(step);remaining-=step;}for(const a of particles){a.x+=a.vx*dt;a.y+=a.vy*dt;a.vy+=100*dt;a.life-=dt;}particles=particles.filter(a=>a.life>0);if(game.mode==='playing'&&!profile.muted){musicTimer-=dt;if(musicTimer<=0){musicTimer=game.bossActive?.3:.43;const melody=game.bossActive?[146.8,174.6,220,196,146.8,164.8,196,220]:[261.6,329.6,392,440,392,329.6,293.7,329.6,261.6,220,261.6,293.7];tone(melody[note++%melody.length],.24,'sine',.018);}}render();frame=requestAnimationFrame(loop);}
 addEventListener('blur',()=>{clearInputs();});document.addEventListener('visibilitychange',()=>{if(document.hidden&&game.mode==='playing')pause();});
+function beginBossReview(){
+  showPlay();
+  game.start(Boolean(game.progress.run));
+  game.checkpoint(game.stage.checkpoints.length-1);
+  game.p.x=game.stage.bossTrigger+8;
+  game.camera=Math.max(0,Math.min(game.stage.width-WIDTH,game.p.x-380));
+}
 home();
 if(kitchenChapter){
   document.title='개미의 모험 — 부엌으로 가는 길';
@@ -175,12 +209,14 @@ if(kitchenChapter){
   $('#result h2').textContent='부엌 너머, 바람이 부는 길.';
   $('#result .result-panel > p').textContent='경비가 비켜 준 문턱 너머로 개미굴에서 불어오는 바람이 느껴집니다.';
   $('#chapter-02').hidden=true;
-  if(profile.cleared)start(Boolean(game.progress.run));
+  if(review==='boss2')beginBossReview();
+  else if(profile.cleared)start(Boolean(game.progress.run));
   else {
     $('#menu').hidden=true;
     dialog([['챕터 2','거실의 베짱이 대장을 쓰러뜨리면 부엌으로 가는 길이 열립니다.']],()=>navigate('./'));
   }
-}else if(review){
+}else if(review==='boss1')beginBossReview();
+else if(review){
   showPlay();game.start(false);
   game.p.x=review==='wet'?2125:1016;
   game.camera=game.p.x-380;

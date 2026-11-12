@@ -25,11 +25,11 @@ test('chapter 2 uses the current profile upgrades and keeps chapter 1 progress i
   assert.equal(profile.best, 87);
   assert.equal(profile.name, '검수개미');
   assert.equal(profile.run, null);
-  assert.equal(game.progress.run.bossHp, 6);
+  assert.equal(game.progress.run.bossHp, 18);
   const livingRoom = new Game(profile);
   livingRoom.start();
   assert.equal(livingRoom.progress.run.bossHp, 14);
-  assert.equal(game.progress.run.bossHp, 6);
+  assert.equal(game.progress.run.bossHp, 18);
 });
 
 test('chapter 2 checkpoint confirms sugar once and retries restore only current progress', () => {
@@ -81,10 +81,10 @@ test('guard health survives reload and a defeated guard opens the exit until the
     game.updateProjectiles(1 / 60);
   };
   hit();
-  assert.equal(game.progress.run.bossHp, 5);
+  assert.equal(game.progress.run.bossHp, 17);
   const resumed = create(JSON.parse(JSON.stringify(game.profile)));
-  assert.equal(resumed.enemies.find(enemy => enemy.boss).hp, 5);
-  for (let i = 0; i < 5; i++) hit();
+  assert.equal(resumed.enemies.find(enemy => enemy.boss).hp, 17);
+  for (let i = 0; i < 17; i++) hit();
   assert.equal(game.mode, 'playing');
   assert.equal(game.progress.run.bossHp, 0);
   assert.equal(game.arena, false);
@@ -96,7 +96,7 @@ test('guard health survives reload and a defeated guard opens the exit until the
   assert.equal(game.progress.cleared, true);
   assert.equal(game.progress.run, null);
   game.start();
-  assert.equal(game.enemies.find(enemy => enemy.boss).hp, 6);
+  assert.equal(game.enemies.find(enemy => enemy.boss).hp, 18);
 });
 
 test('stale concurrent saves cannot overwrite a confirmed balance under the shared lock', async () => {
@@ -117,6 +117,45 @@ test('old draft progress and malformed new checkpoint records do not enter the n
   assert.equal(cleanStage2({ checkpoint: 3700, elapsed: 32 }).run, null);
   assert.equal(cleanStage2({ run: { cp: 999 } }).run, null);
   assert.equal(cleanStage2({ run: { cp: 2, bossHp: 0 } }).run.bossHp, 0);
+});
+
+test('balance update preserves already landed hits, defeated guards and clear records', () => {
+  const before = { cleared: true, best: 46, run: { cp: 2, bossHp: 4 } };
+  const after = cleanStage2(before);
+  assert.equal(after.run.bossHp, 16);
+  assert.equal(after.cleared, true);
+  assert.equal(after.best, 46);
+  assert.equal(cleanStage2(after).run.bossHp, 16);
+  assert.equal(cleanStage2({ run: { cp: 2, bossHp: 0 } }).run.bossHp, 0);
+});
+
+test('kitchen guard targets a fixed landing and the ground wave can be jumped', () => {
+  const game = create();
+  const guard = game.enemies.find(enemy => enemy.boss);
+  game.bossActive = true;
+  game.p.x = 5530;
+  guard.cool = 0;
+  guard.pattern = 1;
+  game.updateBoss(guard, 1 / 60, game.p.x - guard.x);
+  const landing = guard.landing;
+  assert.equal(guard.state, 'warn');
+  assert.ok(landing < guard.x);
+  game.p.x = 5970;
+  for (let i = 0; i < 110 && guard.state !== 'rest'; i++) game.updateBoss(guard, 1 / 60, game.p.x - guard.x);
+  assert.equal(guard.x, landing);
+  assert.deepEqual(game.guardWaves.map(wave => wave.dir), [-1,1]);
+
+  const wave = game.guardWaves[1];
+  game.p.x = wave.x + 5 - game.p.w / 2;
+  game.p.y = FLOOR - game.p.h - 75;
+  game.p.inv = 0;
+  game.updateGuardWaves(1 / 60);
+  assert.equal(game.p.hp, 3);
+  game.p.y = FLOOR - game.p.h;
+  game.updateGuardWaves(1 / 60);
+  assert.equal(game.p.hp, 2);
+  game.retry();
+  assert.deepEqual(game.guardWaves, []);
 });
 
 test('complete the kitchen through cabinet, sink, cap, rope and guard using base controls', () => {

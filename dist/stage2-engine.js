@@ -1,4 +1,4 @@
-import { Game, makeEnemy, FLOOR } from './engine.js?v=0.3.0';
+import { Game, makeEnemy, FLOOR } from './engine.js?v=0.3.1';
 
 export const KITCHEN_WIDTH = 6450;
 export const KITCHEN_CHECKPOINTS = [
@@ -19,7 +19,10 @@ export const HAZARDS = [{ x: 1005, w: 94 }, { x: 1720, w: 54 }];
 export const DRIPS = [{ x: 2180, reach: 54 }, { x: 2585, reach: 53 }];
 export const dripPhase = time => time % 3;
 export const dripHeight = phase => phase < .9 ? 283 : 286 + Math.min(1,(phase-.9)/.22)*288;
-const GUARD_HP = 6;
+const GUARD_HP = 18;
+const PREVIOUS_GUARD_HP = 6;
+const GUARD_BALANCE = 2;
+const WAVE_DURATION = .78;
 const segment = (x, y, w, h, type = 'stone') => ({ x, y, w, h, type });
 const createWorld = () => ({
   solids: [
@@ -61,12 +64,16 @@ const kitchen = {
 const finiteTime = value => Number.isFinite(value) && value > 0 ? value : 0;
 export function cleanStage2(raw) {
   const best = finiteTime(raw?.best) || null;
-  const clean = { cleared: raw?.cleared === true, bossReward: raw?.bossReward === true, best, bestLevels: raw?.bestLevels ?? null, run: null };
+  const clean = { balance: GUARD_BALANCE, cleared: raw?.cleared === true, bossReward: raw?.bossReward === true, best, bestLevels: raw?.bestLevels ?? null, run: null };
   const run = raw?.run;
   if (!run || !Number.isInteger(run.cp) || !KITCHEN_CHECKPOINTS[run.cp]) return clean;
+  // Keep the number of hits already landed in a pre-balance run. A defeated guard stays defeated.
+  const priorMax = raw.balance === GUARD_BALANCE ? GUARD_HP : PREVIOUS_GUARD_HP;
+  const priorHp = Number.isInteger(run.bossHp) ? Math.max(0, Math.min(priorMax, run.bossHp)) : priorMax;
+  const bossHp = priorHp === 0 ? 0 : GUARD_HP - (priorMax - priorHp);
   const ids = value => Array.isArray(value) ? [...new Set(value.filter(id => typeof id === 'string'))] : [];
   clean.run = {
-    cp: run.cp, bossHp: Number.isInteger(run.bossHp) ? Math.max(0, Math.min(GUARD_HP, run.bossHp)) : GUARD_HP,
+    cp: run.cp, bossHp,
     collected: ids(run.collected).filter(id => /^s\d+$/.test(id)),
     dead: ids(run.dead).filter(id => id === 'k-normal' || id === 'k-thin'),
     activated: Array.isArray(run.activated) ? run.activated.filter(i => Number.isInteger(i) && KITCHEN_CHECKPOINTS[i]) : [],
@@ -80,6 +87,7 @@ export class KitchenGame extends Game {
     super(profile, emit, kitchen);
     profile.chapter2 = cleanStage2(profile.chapter2);
     this.dripClocks = [];
+    this.guardWaves = [];
   }
 
   get progress() { return this.profile.chapter2; }
@@ -87,10 +95,89 @@ export class KitchenGame extends Game {
   setup() {
     super.setup();
     this.dripClocks = DRIPS.map(() => 0);
+    this.guardWaves = [];
+  }
+
+  updateBoss(guard, dt, dx) {
+    const faster = guard.hp <= guard.max / 2;
+    const { bossMin, bossMax } = this.stage;
+    const bound = x => Math.max(bossMin, Math.min(bossMax - guard.w, x));
+    switch (guard.state) {
+      case 'walk':
+        if (guard.cool > 0) {
+          guard.x = bound(guard.x + Math.sign(dx) * 63 * dt);
+          break;
+        }
+        guard.state = 'warn';
+        guard.timer = faster ? .72 : .84;
+        guard.dir = Math.sign(dx) || guard.dir;
+        guard.pattern = (guard.pattern || 0) + 1;
+        guard.landing = bound(this.p.x + (this.p.w - guard.w) / 2);
+        break;
+      case 'warn':
+        guard.timer -= dt;
+        if (guard.timer > 0) break;
+        guard.state = guard.pattern % 2 === 1 ? 'charge' : 'slam';
+        guard.duration = guard.state === 'charge' ? .94 : faster ? .65 : .75;
+        guard.timer = guard.duration;
+        guard.launchX = guard.x;
+        this.sound('boss');
+        break;
+      case 'charge':
+        guard.x = bound(guard.x + guard.dir * (faster ? 510 : 450) * dt);
+        guard.timer -= dt;
+        if (guard.timer <= 0) this.restGuard(guard, faster);
+        break;
+      case 'slam': {
+        guard.timer -= dt;
+        const progress = Math.min(1, 1 - guard.timer / guard.duration);
+        guard.x = guard.launchX + (guard.landing - guard.launchX) * progress;
+        guard.y = FLOOR - Math.sin(progress * Math.PI) * 153;
+        if (guard.timer <= 0) {
+          guard.y = FLOOR;
+          const center = guard.x + guard.w / 2;
+          this.guardWaves = [-1, 1].map(dir => ({ x: center, dir, ttl: WAVE_DURATION }));
+          this.restGuard(guard, faster);
+        }
+        break;
+      }
+      case 'rest':
+        guard.timer -= dt;
+        if (guard.timer <= 0) {
+          guard.state = 'walk';
+          guard.cool = faster ? .4 : .55;
+        }
+        break;
+    }
+  }
+
+  restGuard(guard, faster) {
+    guard.state = 'rest';
+    guard.timer = faster ? .85 : 1.05;
+  }
+
+  updateGuardWaves(dt) {
+    if (!this.bossActive) {
+      this.guardWaves = [];
+      return;
+    }
+    const player = this.p;
+    for (const wave of this.guardWaves) {
+      wave.x += wave.dir * 335 * dt;
+      wave.ttl -= dt;
+      if (wave.ttl > 0 && Math.abs(player.x + player.w / 2 - wave.x) < 30 &&
+          player.y + player.h > FLOOR - 23 && player.inv <= 0) {
+        wave.ttl = 0;
+        this.hurt();
+      }
+    }
+    this.guardWaves = this.guardWaves.filter(wave =>
+      wave.ttl > 0 && wave.x > this.stage.arenaLeft && wave.x < this.stage.arenaRight);
   }
 
   updateHazards(dt) {
     if (this.mode !== 'playing') return;
+    this.updateGuardWaves(dt);
     const p = this.p;
     const center = p.x + p.w / 2;
     if (p.ground && HAZARDS.some(h => p.x + p.w > h.x && p.x < h.x + h.w && p.y + p.h > FLOOR - 14)) {

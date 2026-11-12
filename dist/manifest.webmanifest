@@ -2,7 +2,7 @@
   "id": "./",
   "name": "개미의 모험",
   "short_name": "개미의 모험",
-  "description": "장난꾸러기 개미의 거실 대탈출. 점프와 침 공격으로 베짱이 무리를 넘어 집으로!",
+  "description": "거실과 부엌, 바람이 드는 문턱을 지나 개미굴로 돌아오는 3챕터 액션 모험.",
   "lang": "ko",
   "start_url": "./?source=pwa",
   "scope": "./",

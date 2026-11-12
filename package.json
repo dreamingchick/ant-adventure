@@ -1,1 +1,1 @@
-{"name": "ant-adventure", "version": "0.4.2", "private": true, "type": "module", "scripts": {"test": "node --test tests/*.test.mjs"}}
+{"name": "ant-adventure", "version": "0.4.3", "private": true, "type": "module", "scripts": {"test": "node --test tests/*.test.mjs"}}

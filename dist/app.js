@@ -1,12 +1,12 @@
 import {initPwa} from './pwa.js';
 import {mountNameKeyboard} from './name-keyboard.js';
 import {mountViewport} from './viewport.js';
-import {Game,freshProfile,sanitize,WIDTH,HEIGHT,FLOOR,COSTS,LEVELS} from './engine.js?v=0.4.2';
-import {KitchenGame,cleanStage2} from './stage2-engine.js?v=0.4.2';
-import {drawKitchenBackdrop,drawKitchenDetails} from './stage2-view.js?v=0.4.2';
-import {ThresholdGame,cleanStage3} from './stage3-engine.js?v=0.4.2';
-import {drawThresholdBackdrop,drawThresholdDetails,drawWedding,drawBridalDress} from './stage3-view.js?v=0.4.2';
-import {ENDINGS,newJourney,restoreJourney} from './journey.js?v=0.4.2';
+import {Game,freshProfile,sanitize,WIDTH,HEIGHT,FLOOR,COSTS,LEVELS} from './engine.js?v=0.4.3';
+import {KitchenGame,cleanStage2} from './stage2-engine.js?v=0.4.3';
+import {drawKitchenBackdrop,drawKitchenDetails} from './stage2-view.js?v=0.4.3';
+import {ThresholdGame,cleanStage3} from './stage3-engine.js?v=0.4.3';
+import {drawThresholdBackdrop,drawThresholdDetails,drawWedding,drawBridalDress} from './stage3-view.js?v=0.4.3';
+import {ENDINGS,newJourney,restoreJourney} from './journey.js?v=0.4.3';
 import {createProfileStore} from './profile-store.js';
 const $=s=>document.querySelector(s),canvas=$('#game'),ctx=canvas.getContext('2d');
 const params=new URLSearchParams(location.search);
@@ -101,8 +101,8 @@ function renderDialog(){$('#speaker').textContent=lines[lineIndex][0];$('#dialog
 function nextDialog(){lineIndex++;if(lineIndex>=lines.length){$('#dialog').hidden=true;clearInputs();dialogDone();}else renderDialog();}
 function pause(){if(game.mode!=='playing')return;game.mode='paused';clearInputs();$('#pause-name').value=profile.name;$('#sound').textContent=profile.muted?'소리 꺼짐 ♫':'소리 켜짐 ♪';$('#pause-menu').hidden=false;}
 function resume(){$('#pause-menu').hidden=true;game.mode='playing';clearInputs();}
-function home(){clearInputs();game.mode='menu';for(const id of ['pause-menu','result','dialog','help','hud','controls','hint','boss-hud','ending'])$('#'+id).hidden=true;$('#menu').hidden=false;$('#review-chapters').hidden=!reviewHost;$('#ant-name').value=profile.name;$('#continue').hidden=!profile.run;$('#chapter-02-menu').hidden=!canEnterChapter(2);$('#chapter-03-menu').hidden=!canEnterChapter(3);
-$('#new-journey').hidden=!profile.journey;$('#last-ending').hidden=!profile.journey?.ending;$('#start').textContent=profile.run?'처음부터 모험하기 →':'모험 시작 →';$('#best-label').textContent=profile.best?'최고 기록 '+time(profile.best):'첫 발자국을 남겨 보세요';}
+function home(){clearInputs();game.mode='menu';for(const id of ['pause-menu','result','dialog','help','hud','controls','hint','boss-hud','ending','ending-gallery'])$('#'+id).hidden=true;$('#menu').hidden=false;$('#review-chapters').hidden=!reviewHost;$('#ant-name').value=profile.name;$('#continue').hidden=!profile.run;$('#chapter-02-menu').hidden=!canEnterChapter(2);$('#chapter-03-menu').hidden=!canEnterChapter(3);
+$('#new-journey').hidden=!profile.journey;$('#start').textContent=profile.run?'처음부터 모험하기 →':'모험 시작 →';$('#best-label').textContent=profile.best?'최고 기록 '+time(profile.best):'첫 발자국을 남겨 보세요';}
 const enterKitchen=()=>navigate('./?chapter=2');
 const enterThreshold=()=>navigate('./?chapter=3');
 $('#chapter-03').onclick=enterThreshold;
@@ -115,10 +115,11 @@ $('#new-journey').onclick=()=>{
   if(profile.chapter3)profile.chapter3.run=null;
   start(false);
 };
-$('#last-ending').onclick=()=>{
-  const {ending,tracked,hits,deaths}=profile.journey;
-  $('#menu').hidden=true;
-  showEnding({id:ending,tracked,hits,deaths},home);
+$('#ending-gallery-open').onclick=openEndingGallery;
+$('#ending-gallery-close').onclick=()=>{
+  $('#ending-gallery').hidden=true;
+  $('#menu').hidden=false;
+  $('#ending-gallery-open').focus();
 };
 for(const button of document.querySelectorAll('[data-review-chapter]')){
   button.onclick=()=>navigate('./?review='+button.dataset.reviewChapter);
@@ -126,7 +127,40 @@ for(const button of document.querySelectorAll('[data-review-chapter]')){
 $('#chapter-02').onclick=enterKitchen;$('#chapter-02-menu').onclick=enterKitchen;$('#start').onclick=()=>{if(profile.run){if(!confirm('미확정 진행을 포기하고 처음부터 출발할까요? 확정 설탕과 강화는 유지됩니다.'))return;}start(false);};$('#continue').onclick=()=>start(true);$('#pause').onclick=pause;$('#resume').onclick=resume;$('#dialog-next').onclick=nextDialog;$('#dialog-skip').onclick=()=>{$('#dialog').hidden=true;clearInputs();dialogDone();};$('#checkpoint-retry').onclick=()=>{$('#pause-menu').hidden=true;game.retry();};$('#restart').onclick=()=>{if(confirm('현재 구간의 미확정 설탕을 되돌리고 처음부터 출발할까요?')){$('#pause-menu').hidden=true;game.restart();}};const returnHome=()=>kitchenChapter||thresholdChapter||review?navigate('./'):home();$('#home').onclick=returnHome;$('#result-home').onclick=returnHome;$('#replay').onclick=()=>{showPlay();game.start(false);};$('#help-open').onclick=()=>{helpReturn=game.mode;$('#help').hidden=false;};$('#help-close').onclick=()=>{$('#help').hidden=true;game.mode=helpReturn;};$('#sound').onclick=()=>{profile.muted=!profile.muted;persist();$('#sound').textContent=profile.muted?'소리 꺼짐 ♫':'소리 켜짐 ♪';};function rename(input){profile.name=$(input).value.trim().slice(0,12)||'개미';$(input).blur();$('#ant-name').value=profile.name;persist();toast('이름을 '+profile.name+'(으)로 바꿨어요.');}$('#rename').onclick=()=>rename('#ant-name');$('#pause-rename').onclick=()=>rename('#pause-name');
 mountNameKeyboard({inputs:document.querySelectorAll('#ant-name,#pause-name'),host:$('#viewport'),refresh:viewport.refresh,onSave:input=>rename('#'+input.id)});
 for(const input of document.querySelectorAll('#ant-name,#pause-name'))input.addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.isComposing){event.preventDefault();rename('#'+input.id);}});
-function showEnding(ending,done){
+function openEndingGallery(){
+  const latest=profile.journey;
+  const unlocked=new Set(profile.endings);
+  if(latest?.ending)unlocked.add(latest.ending);
+  const entries=Object.entries(ENDINGS);
+  const gallery=$('#ending-gallery');
+  const list=$('#ending-list');
+  $('#ending-gallery-progress').textContent=unlocked.size+' / '+entries.length+' 해금'+(reviewHost?' · 검수판에서는 모든 장면을 볼 수 있어요.':'');
+  list.replaceChildren();
+  for(const [id,ending] of entries){
+    const earned=unlocked.has(id);
+    const button=document.createElement('button');
+    const title=document.createElement('span');
+    const status=document.createElement('small');
+    button.type='button';
+    button.disabled=!earned&&!reviewHost;
+    title.textContent=button.disabled?'미해금 엔딩':ending.title;
+    status.textContent=earned?'다시 보기':reviewHost?'검수 보기':'잠김';
+    button.append(title,status);
+    button.onclick=()=>{
+      gallery.hidden=true;
+      const record=latest?.ending===id?{id,tracked:latest.tracked,hits:latest.hits,deaths:latest.deaths}:{id};
+      showEnding(record,()=>{
+        gallery.hidden=false;
+        button.focus();
+      },'엔딩 목록으로');
+    };
+    list.append(button);
+  }
+  $('#menu').hidden=true;
+  gallery.hidden=false;
+  $('#ending-gallery-title').focus();
+}
+function showEnding(ending,done,returnLabel='결과 보기 →'){
   clearInputs();
   for(const id of ['controls','hint','boss-hud','dialog','result'])$('#'+id).hidden=true;
   $('#toast').classList.remove('show');
@@ -134,10 +168,13 @@ function showEnding(ending,done){
   weddingStart=performance.now();
   $('#ending-title').textContent=ENDINGS[wedding].title;
   $('#ending-caption').textContent=ENDINGS[wedding].caption;
-  $('#ending-counts').textContent=ending.tracked?'사망 '+ending.deaths+'회 · 피격 '+ending.hits+'회':'이전 여정 · 누적 기록 미확인';
-  $('#ending-results').textContent=game.mode==='menu'?'첫 화면으로':'결과 보기 →';
+  const counts=$('#ending-counts');
+  counts.hidden=ending.tracked===undefined;
+  counts.textContent=ending.tracked?'사망 '+ending.deaths+'회 · 피격 '+ending.hits+'회':'이전 여정 · 누적 기록 미확인';
+  $('#ending-results').textContent=returnLabel;
   $('#ending-results').onclick=()=>{$('#ending').hidden=true;wedding=null;done();};
   $('#ending').hidden=false;
+  $('#ending-title').focus();
 }
 function result(event){clearInputs();$('#result').hidden=false;$('#controls').hidden=true;$('#hint').hidden=true;$('#boss-hud').hidden=true;$('#result-time').textContent=time(event.elapsed);$('#result-sugar').textContent=event.sugar+'개';$('#result-best').textContent=time(game.progress.best||event.elapsed);$('#chapter-03').hidden=!kitchenChapter||!canEnterChapter(3);
 $('#chapter-02').hidden=kitchenChapter||thresholdChapter||!canEnterChapter(2);
@@ -304,5 +341,5 @@ else if(review){
   game.p.x=review==='wet'?2125:1016;
   game.camera=game.p.x-380;
   toast('검수 시작 위치 · 오른쪽으로 이동하고 붙기 버튼을 눌러 보세요.');
-}
+}else if(reviewHost&&params.get('review')==='endings')openEndingGallery();
 initPwa();requestAnimationFrame(loop);

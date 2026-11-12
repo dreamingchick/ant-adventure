@@ -1,4 +1,4 @@
-import { advanceJourney, newJourney, recordDamage } from './journey.js?v=0.4.2';
+import { advanceJourney, newJourney, recordDamage } from './journey.js?v=0.4.3';
 export const WIDTH=1280,HEIGHT=720,WORLD=7900,FLOOR=590;
 export const LEVELS={health:[3,4,5,6],spit:[100,125,150,175],regen:[25,30,35,40]};
 export const COSTS=[20,40,60];

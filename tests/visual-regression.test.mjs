@@ -7,7 +7,7 @@ const source = f => readFile(new URL('../dist/' + f, import.meta.url), 'utf8');
 
 test('the ant faces up and down on the wall and stays upright in either ceiling direction', async () => {
   const app = await source('app.js');
-  assert.match(app, /imageCell\(images\.ant,[^;]+pose\.flip,pose\.rotation\);/);
+  assert.match(app, /imageCell\(images\.ant,[^;]+pose\.flip,pose\.rotation,/);
   assert.match(app, /for\(const path of g\.world\.paths\)drawClimbSupport\(path\)/);
   assert.match(app, /lineWidth=45;ctx\.stroke\(\)/);
   assert.deepEqual(makeWorld().paths.map(path => path.id), ['table','slip']);

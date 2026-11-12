@@ -1,5 +1,76 @@
-import { FLOOR } from './engine.js?v=0.4.1';
-import { WINDS } from './stage3-engine.js?v=0.4.1';
+import { FLOOR } from './engine.js?v=0.4.2';
+import { WINDS } from './stage3-engine.js?v=0.4.2';
+
+function garment(ctx,fill,stroke,trace){
+  ctx.beginPath();
+  trace(ctx);
+  ctx.closePath();
+  ctx.fillStyle=fill;
+  ctx.fill();
+  if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=1;ctx.stroke();}
+}
+
+export function drawBridalDress(ctx,col,row){
+  ctx.save();
+  const bodiceX=row&&col?51:50;
+  const shoulder=row?62:63;
+  const hem=row?84:85;
+  const satin=ctx.createLinearGradient(18,shoulder,60,hem);
+  satin.addColorStop(0,'#fffaf1');
+  satin.addColorStop(.55,'#fffdf9');
+  satin.addColorStop(1,'#d8b8af');
+  // A sheer veil falls behind the face, under the tiara.
+  garment(ctx,'#fffaf0c9','#fffdf6',p=>{
+    p.moveTo(44,24);p.quadraticCurveTo(34,28,32,42);
+    p.quadraticCurveTo(29,53,18,56);p.quadraticCurveTo(22,62,34,60);
+    p.quadraticCurveTo(40,53,40,43);p.quadraticCurveTo(39,33,47,27);
+  });
+  garment(ctx,'#ffedba','#c29a53',p=>{
+    p.moveTo(40,29);p.lineTo(42,22);p.lineTo(46,25);
+    p.lineTo(50,20);p.lineTo(54,26);p.lineTo(58,24);p.lineTo(57,31);
+  });
+  // Fitted bodice and flared satin skirt leave the running feet visible.
+  garment(ctx,satin,'#ae8f80',p=>{
+    p.moveTo(bodiceX-9,shoulder);p.quadraticCurveTo(bodiceX-2,shoulder+3,bodiceX+5,shoulder);
+    p.quadraticCurveTo(bodiceX+10,shoulder+5,bodiceX+5,shoulder+10);
+    p.quadraticCurveTo(bodiceX+7,hem-6,bodiceX+12,hem-4);
+    p.quadraticCurveTo(38,hem+9,14,hem-1);
+    p.quadraticCurveTo(23,hem-6,27,hem-14);
+    p.quadraticCurveTo(31,hem-21,bodiceX-10,shoulder+7);
+  });
+  ctx.beginPath();ctx.moveTo(46,shoulder+9);ctx.quadraticCurveTo(36,hem-7,32,hem+2);
+  ctx.moveTo(49,shoulder+10);ctx.quadraticCurveTo(48,hem-4,46,hem+2);
+  ctx.strokeStyle='#c3a39c';ctx.lineWidth=.9;ctx.stroke();
+  garment(ctx,'#e6b6ad',null,p=>{
+    p.moveTo(bodiceX-10,shoulder+6);p.quadraticCurveTo(bodiceX-1,shoulder+10,bodiceX+6,shoulder+6);
+    p.lineTo(bodiceX+5,shoulder+9);p.quadraticCurveTo(bodiceX-2,shoulder+13,bodiceX-11,shoulder+9);
+  });
+  ctx.restore();
+}
+
+export function drawTuxedo(ctx){
+  ctx.save();
+  const wool=ctx.createLinearGradient(45,53,68,77);
+  wool.addColorStop(0,'#4d525b');wool.addColorStop(1,'#192028');
+  garment(ctx,wool,'#191b22',p=>{
+    p.moveTo(43,53);p.quadraticCurveTo(51,55,57,52);
+    p.quadraticCurveTo(61,58,68,66);p.lineTo(76,75);p.lineTo(69,82);
+    p.lineTo(59,75);p.quadraticCurveTo(50,77,42,70);
+    p.quadraticCurveTo(39,63,43,53);
+  });
+  garment(ctx,'#fff9ed','#b9b3a5',p=>{
+    p.moveTo(43,54);p.quadraticCurveTo(49,57,54,55);p.lineTo(49,70);p.lineTo(43,63);
+  });
+  garment(ctx,'#68717c',null,p=>{
+    p.moveTo(54,55);p.lineTo(58,59);p.lineTo(54,63);p.lineTo(56,65);p.lineTo(49,72);
+  });
+  garment(ctx,'#29323b','#171921',p=>{
+    p.moveTo(42,56);p.lineTo(47,58);p.lineTo(52,56);p.lineTo(52,62);
+    p.lineTo(47,60);p.lineTo(42,62);
+  });
+  ctx.fillStyle='#fff3d4';ctx.fillRect(46.4,58,1.3,2);
+  ctx.restore();
+}
 
 export function drawThresholdBackdrop(ctx,image,camera,width,height){
   const sky=ctx.createLinearGradient(0,0,0,height);
@@ -58,16 +129,16 @@ export function drawThresholdDetails(ctx,g,{rr,ellipse,text,doorway,imageCell,im
     ctx.fillStyle='#bf8057';ctx.fill();ctx.strokeStyle='#714d36';ctx.stroke();
   }else text('열린 바깥문',3048,329,16,'#413829','center');
 
-  if(!g.duel&&g.p.x>2390){
-    const x=g.crossing?g.p.x+39:g.p.x>3760?g.p.x+72:g.gateOpen?3325:2580;
-    imageCell(images.grass,0,1,2,2,x-30,FLOOR-117,104,119,g.p.x>x);
-    text('베짱이',x+20,FLOOR-125,14,'#405d37','center');
+  if(!g.duel&&(g.companionPose||g.p.x>2390)){
+    const {x,y,flip}=g.companionPose??{x:2580,y:FLOOR,flip:false};
+    imageCell(images.grass,0,1,2,2,x-52,y-117,104,119,flip,0,g.metSpouse?drawTuxedo:undefined);
+    text('베짱이',x,y-125,14,'#405d37','center');
   }
   if(!g.duel)return;
   const duel=g.duel;
   rr(4490,343,650,18,7,'#9a7448','#533e31');
   text('베짱이 ↔ 아빠 개미',4815,211,20,'#3e3526','center');
-  imageCell(images.grass,0,1,2,2,duel.spouseX-45,239,104,104,false);
+  imageCell(images.grass,0,1,2,2,duel.spouseX-52,239,104,104,duel.fatherX>duel.spouseX,0,drawTuxedo);
   imageCell(images.ant,0,0,2,2,duel.fatherX-60,220-(duel.timer>1.15?Math.sin(Math.min(1,(duel.timer-1.15)/.75)*Math.PI)*30:0),126,124,true);
   rr(duel.fatherX-9,252,29,7,3,'#384b50');
   rr(duel.spouseX-43,224,89,6,3,'#45372b');
@@ -102,23 +173,25 @@ export function drawWedding(canvas,images,id,seconds){
     ctx.fillStyle=i%2?'#fbebb5':'#e1a3a1';
     ctx.fillRect(15+i*32,35+((i*37)%130)+4*Math.sin(seconds*2+i),6,4);
   }
-  const draw=(image,col,row,x,y,width,height,flip=false,angle=0)=>{
+  const draw=(image,col,row,outfit,x,y,width,height,flip=false,angle=0)=>{
     if(!image.complete||!image.naturalWidth)return;
     ctx.save();ctx.translate(x,y);ctx.rotate(angle);ctx.scale(flip?-1:1,1);
     ctx.drawImage(image,col*image.naturalWidth/2,row*image.naturalHeight/2,image.naturalWidth/2,image.naturalHeight/2,-width/2,-height/2,width,height);
+    ctx.translate(-width/2,-height/2);ctx.scale(width/100,height/100);
+    outfit(ctx,col,row);
     ctx.restore();
   };
   const ax=165+165*slide;
   const gx=ax+103;
   if(id==='carry'){
-    draw(images.grass,0,1,ax+80,140,130,129);
-    draw(images.ant,0,0,ax+37,104,85,88,false,-.27);
+    draw(images.grass,0,1,drawTuxedo,ax+80,140,130,129,true);
+    draw(images.ant,0,0,drawBridalDress,ax+37,104,85,88,false,-.27);
   }else if(id==='drag'){
-    draw(images.grass,0,1,ax+33,175,117,105,true,-1.13);
-    draw(images.ant,0,0,ax+103,151,100,102);
+    draw(images.grass,0,1,drawTuxedo,ax+33,175,117,105,true,-1.13);
+    draw(images.ant,0,0,drawBridalDress,ax+103,151,100,102);
   }else{
-    draw(images.grass,0,1,gx-(id==='collar'?28:0),135,132,133,id==='perfect',id==='collar'?-.2:0);
-    draw(images.ant,0,0,ax,151,105,106);
+    draw(images.grass,0,1,drawTuxedo,gx-(id==='collar'?28:0),135,132,133,id!=='perfect',id==='collar'?-.2:0);
+    draw(images.ant,0,0,drawBridalDress,ax,151,105,106);
     if(id==='perfect'){
       ctx.fillStyle='#fff0c8';ctx.font='24px system-ui';ctx.fillText('♥',ax+48,93);
     }

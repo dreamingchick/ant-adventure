@@ -1,5 +1,5 @@
-import { Game, makeEnemy, FLOOR } from './engine.js?v=0.4.1';
-import { endingFor } from './journey.js?v=0.4.1';
+import { Game, makeEnemy, FLOOR } from './engine.js?v=0.4.2';
+import { endingFor } from './journey.js?v=0.4.2';
 
 export const WINDS = [
   { from: 730, to: 1160, safe: [875, 985], force: -145 },
@@ -8,6 +8,7 @@ export const WINDS = [
 export const windPhase = time => time % 3.5;
 const MOTHER_HP = 12;
 const DUEL_TIME = 28;
+const DUEL_SETTLE_SPEED = 6;
 const GATE_X = 3040;
 const checkpoints = [
   { x:105,y:FLOOR,name:'부엌 뒤 문턱' },
@@ -74,6 +75,11 @@ export class ThresholdGame extends Game {
   get progress(){return this.profile.chapter3;}
   get wind(){return windPhase(this.time);}
   get mother(){return this.enemies.find(enemy=>enemy.id==='mother');}
+  get companionPose(){
+    if(!this.companion)return null;
+    const {x,y,dir}=this.companion;
+    return {x,y,flip:dir>0};
+  }
 
   setup(){
     super.setup();
@@ -81,6 +87,7 @@ export class ThresholdGame extends Game {
     this.mother.dead=false;
     this.gateOpen=this.progress.run.cp>=2;
     this.metSpouse=this.gateOpen;
+    this.companion=this.metSpouse?{x:3325,y:FLOOR,dir:-1,following:true}:null;
     this.rejoined=false;
     this.crossing=null;
     this.duel=null;
@@ -115,11 +122,20 @@ export class ThresholdGame extends Game {
     return speed+(zone&&this.wind>=.8&&this.wind<2?zone.force:0);
   }
 
-  jump(){if(!this.crossing)super.jump();}
+  jump(){if(!this.crossing&&!this.duel?.playerDone)super.jump();}
   attack(){return !this.crossing&&(!this.duel||!this.duel.playerDone)&&super.attack();}
   rememberBoss(){}
   recordBossHit(){}
-  onBossDefeated(){if(this.duel)this.duel.playerDone=true;}
+  onBossDefeated(){this.endPlayerDuel();}
+
+  endPlayerDuel(){
+    if(!this.duel||this.duel.playerDone)return;
+    this.duel.playerDone=true;
+    Object.assign(this.input,{left:false,right:false,jump:false});
+    Object.assign(this.p,{vx:0,vy:0,firePose:0,inv:0});
+    this.shots=[];
+    this.notify('엄마 개미와의 대결 종료 · 베짱이의 대결이 마무리됩니다.');
+  }
 
   hurt(amount=1){
     if(this.duel&&this.duel.playerDone)return;
@@ -128,11 +144,22 @@ export class ThresholdGame extends Game {
 
   onPlayerDefeat(){
     if(!this.duel){super.onPlayerDefeat();return;}
-    this.duel.playerDone=true;
+    this.endPlayerDuel();
     this.mother.state='rest';
-    this.shots=[];
     this.save();
-    this.notify('엄마 개미와의 대결이 끝났어요. 베짱이의 대결이 이어집니다.');
+  }
+
+  updateCompanion(dt){
+    if(!this.metSpouse||this.duel)return;
+    const p=this.p;
+    const center=p.x+p.w/2;
+    const companion=this.companion??={x:2580,y:FLOOR,dir:-1,following:false};
+    if(Math.abs(center-companion.x)<85)companion.following=true;
+    const target=this.crossing?center+46:companion.following?center-p.dir*82:2580;
+    companion.x=toward(companion.x,target,(this.crossing?750:360)*dt);
+    const feet=p.y+p.h;
+    companion.y=toward(companion.y,companion.following?Math.min(FLOOR,feet):FLOOR,420*dt);
+    if(Math.abs(center-companion.x)>8)companion.dir=Math.sign(center-companion.x);
   }
 
   updateBoss(mother,dt,dx){
@@ -176,16 +203,17 @@ export class ThresholdGame extends Game {
     duel.elapsed+=dt;
     duel.strike=Math.max(0,duel.strike-dt);
     if(!duel.aiDone){
-      duel.timer+=dt;
+      const pace=duel.playerDone?DUEL_SETTLE_SPEED:1;
+      duel.timer+=dt*pace;
       const charging=duel.timer>1.1;
-      duel.spouseX=toward(duel.spouseX,charging?4770:4550,dt*230);
-      duel.fatherX=toward(duel.fatherX,charging?4870:5050,dt*210);
+      duel.spouseX=toward(duel.spouseX,charging?4770:4550,dt*230*Math.sqrt(pace));
+      duel.fatherX=toward(duel.fatherX,charging?4870:5050,dt*210*Math.sqrt(pace));
       if(duel.timer>=1.9){
         duel.round++;
         const other=duel.advantage==='father'?'spouse':'father';
         duel.attacker=duel.round%3===0?other:duel.advantage;
         this.aiHit(duel.attacker,duelPairs[duel.attacker]);
-        duel.timer=0;
+        duel.timer-=1.9;
         duel.strike=.28;
       }
     }
@@ -205,17 +233,26 @@ export class ThresholdGame extends Game {
       this.p.y=FLOOR-this.p.h-60*Math.sin(Math.PI*crossing.t);
       this.p.dir=1;
       this.camera=Math.max(0,this.p.x-380);
+      this.updateCompanion(dt);
       if(crossing.t===1){this.crossing=null;this.p.vy=0;}
       return;
     }
     if(this.duel?.playerDone){
       this.elapsed+=dt;this.time+=dt;
+      if(this.p.hp===0){
+        const mother=this.mother;
+        const target=this.p.x<stage.arenaRight-240?this.p.x+125:this.p.x-155;
+        mother.x=toward(mother.x,target,150*dt);
+        mother.dir=Math.sign(this.p.x-mother.x)||-1;
+        this.p.y=toward(this.p.y,FLOOR-this.p.h,290*dt);
+      }
       this.updateDuel(dt);
       return;
     }
     super.update(dt);
     if(this.mode==='playing'&&!this.metSpouse&&range(this.p.x,2440,GATE_X)){
       this.metSpouse=true;
+      this.updateCompanion(dt);
       this.emit({type:'meet'});
     }
     if(!this.rejoined&&this.p.x>=3920){
@@ -224,6 +261,7 @@ export class ThresholdGame extends Game {
     }
     if(this.bossActive&&!this.duel)this.startDuel();
     if(this.bossActive)this.p.x=Math.min(this.p.x,stage.arenaRight-this.p.w);
+    this.updateCompanion(dt);
   }
 
   finish(){

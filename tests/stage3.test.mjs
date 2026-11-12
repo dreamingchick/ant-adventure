@@ -85,6 +85,53 @@ test('a clean timed finish counts as perfect regardless of the AI duel result',(
   }
 });
 
+test('an early defeat while touching the mother settles both duels and opens the ending within three seconds',()=>{
+  for(const advantage of ['father','spouse']){
+    const game=atFinale({...newJourney(),next:3});
+    const events=[];
+    game.emit=event=>events.push(event);
+    game.duel.advantage=advantage;
+    game.p.x=game.mother.x+20;
+    game.p.hp=1;
+    game.p.inv=0;
+    tick(game);
+    assert.equal(game.p.hp,0);
+    assert.equal(game.duel.playerDone,true);
+    tick(game,30);
+    assert.ok(game.mother.x>=game.p.x+game.p.w);
+    tick(game,150);
+    assert.equal(game.mode,'result');
+    assert.equal(game.profile.journey.deaths,1);
+    assert.equal(game.duel[advantage==='father'?'spouse':'father'],0);
+    assert.equal(events.filter(event=>event.type==='result').length,1);
+  }
+});
+
+test('the dressed companion follows the ant and faces it from either side after the crossing',()=>{
+  const game=new ThresholdGame(freshProfile());
+  game.start();
+  assert.equal(game.metSpouse,false);
+  game.p.x=2440;
+  tick(game);
+  assert.equal(game.metSpouse,true);
+  assert.equal(game.companionPose.flip,false);
+  game.p.x=2550;
+  tick(game);
+  game.p.x=3970;
+  game.p.dir=1;
+  tick(game,300);
+  assert.ok(game.companionPose.x<game.p.x);
+  assert.equal(game.companionPose.flip,true);
+  game.input.left=true;
+  tick(game,28);
+  assert.ok(game.companionPose.x>game.p.x+game.p.w/2);
+  assert.equal(game.companionPose.flip,false);
+
+  game.start(true);
+  assert.equal(game.metSpouse,true);
+  assert.equal(game.companionPose.flip,false);
+});
+
 test('journey counts carry between chapters, ignore invulnerability and survive restart',()=>{
   const profile=freshProfile();
   const living=new Game(profile);

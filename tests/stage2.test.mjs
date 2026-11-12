@@ -214,8 +214,10 @@ test('complete the kitchen through cabinet, sink, cap, rope and guard using base
     game.input.left = !guard.dead && player.x > guard.x - 90;
     if (player.ground && (guard.state === 'charge' || guard.state === 'slam') &&
         Math.abs(guard.x - player.x) < 220) game.jump();
-    if (!guard.dead) {
-      player.dir = guard.x > player.x ? 1 : -1;
+    const shotY = player.y + 23;
+    if (!guard.dead && Math.abs(guard.x-player.x) < 240 &&
+        shotY > guard.y-guard.h+15 && shotY < guard.y) {
+      player.dir = guard.x + guard.w/2 > player.x + player.w/2 ? 1 : -1;
       game.attack();
     }
     tick(game);

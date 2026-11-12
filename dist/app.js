@@ -1,12 +1,12 @@
 import {initPwa} from './pwa.js';
 import {mountNameKeyboard} from './name-keyboard.js';
 import {mountViewport} from './viewport.js';
-import {Game,freshProfile,sanitize,WIDTH,HEIGHT,FLOOR,COSTS,LEVELS} from './engine.js?v=1.0.0';
-import {KitchenGame,cleanStage2} from './stage2-engine.js?v=1.0.0';
-import {drawKitchenBackdrop,drawKitchenDetails} from './stage2-view.js?v=1.0.0';
-import {ThresholdGame,cleanStage3} from './stage3-engine.js?v=1.0.0';
-import {drawThresholdBackdrop,drawThresholdDetails,drawBridalDress} from './stage3-view.js?v=1.0.0';
-import {ENDINGS,newJourney,restoreJourney} from './journey.js?v=1.0.0';
+import {Game,freshProfile,sanitize,WIDTH,HEIGHT,FLOOR,COSTS,LEVELS} from './engine.js?v=1.0.1';
+import {KitchenGame,cleanStage2} from './stage2-engine.js?v=1.0.1';
+import {drawKitchenBackdrop,drawKitchenDetails} from './stage2-view.js?v=1.0.1';
+import {ThresholdGame,cleanStage3} from './stage3-engine.js?v=1.0.1';
+import {drawThresholdBackdrop,drawThresholdDetails,drawBridalDress} from './stage3-view.js?v=1.0.1';
+import {ENDINGS,newJourney,restoreJourney} from './journey.js?v=1.0.1';
 import {createProfileStore} from './profile-store.js';
 const $=s=>document.querySelector(s),canvas=$('#game'),ctx=canvas.getContext('2d');
 const params=new URLSearchParams(location.search);

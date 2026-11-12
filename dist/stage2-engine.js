@@ -1,4 +1,4 @@
-import { Game, makeEnemy, FLOOR } from './engine.js?v=1.0.0';
+import { Game, makeEnemy, FLOOR } from './engine.js?v=1.0.1';
 
 export const KITCHEN_WIDTH = 6450;
 export const KITCHEN_CHECKPOINTS = [
@@ -47,7 +47,7 @@ const kitchen = {
   chapter: 2,
   width: KITCHEN_WIDTH, checkpoints: KITCHEN_CHECKPOINTS, areas, makeWorld: createWorld,
   bossHp: GUARD_HP, bossReward: 0, bossTrigger: 5350, arenaLeft: 5270, arenaRight: 6180,
-  bossMin: 5420, bossMax: 6100, crateMin: 3030, crateMax: 3278, ropeRest: -.62,
+  crateMin: 3030, crateMax: 3278, ropeRest: -.62,
   ropeReach: 100, exitRequired: 6270,
   sugar: [
     [215,545,5,41],[660,447,3,43],[1020,507,3,35],[1290,340,7,44],
@@ -99,10 +99,10 @@ export class KitchenGame extends Game {
     this.guardWaves = [];
   }
 
-  updateBoss(guard, dt, dx) {
+  updateBoss(guard, dt) {
     const faster = guard.hp <= guard.max / 2;
-    const { bossMin, bossMax } = this.stage;
-    const bound = x => Math.max(bossMin, Math.min(bossMax - guard.w, x));
+    const dx = this.bossOffset(guard);
+    const bound = x => this.boundBossX(guard, x);
     switch (guard.state) {
       case 'walk':
         if (guard.cool > 0) {

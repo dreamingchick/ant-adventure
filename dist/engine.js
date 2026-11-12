@@ -1,5 +1,6 @@
-import { advanceJourney, newJourney, recordDamage } from './journey.js?v=1.0.0';
+import { advanceJourney, newJourney, recordDamage } from './journey.js?v=1.0.1';
 export const WIDTH=1280,HEIGHT=720,WORLD=7900,FLOOR=590;
+const ARENA_WALL_WIDTH=20;
 export const LEVELS={health:[3,4,5,6],spit:[100,125,150,175],regen:[25,30,35,40]};
 export const COSTS=[20,40,60];
 export const CHECKPOINTS=[{x:110,y:590,name:'첫 발자국'},{x:1920,y:590,name:'탁자 아래 쉼터'},{x:3790,y:590,name:'실밥 너머 쉼터'},{x:6280,y:590,name:'대장 앞 쉼터'}];
@@ -20,7 +21,7 @@ const livingRoom = {
   chapter: 1,
   width: WORLD, checkpoints: CHECKPOINTS, areas: AREAS, makeWorld, bossHp: 14,
   bossReward: 45, bossTrigger: 6420, arenaLeft: 6390, arenaRight: 7580,
-  bossMin: 6480, bossMax: 7440, crateMin: 2590, crateMax: 2826,
+  crateMin: 2590, crateMax: 2826,
   requiredGate: 6150,
   sugar: [[220,490,7,46],[675,415,4,35],[1160,300,8,43],[1640,545,5,48],[2200,445,4,35],[2400,255,5,28],[2810,485,3,36],[2935,325,3,34],[3510,415,4,40],[3950,470,3,34],[4490,545,5,42],[5260,400,4,34],[5770,545,5,35],[6010,450,3,35]],
   enemies: () => [
@@ -87,7 +88,7 @@ update(dt){if(this.mode!=='playing')return;dt=Math.min(.033,dt);this.time+=dt;th
 const r=this.world.rope;if(!p.rope&&this.stage.ropeRest!==undefined){r.angle=this.stage.ropeRest;r.velocity=0;}else{r.velocity+=(-Math.sin(r.angle)*2+(p.rope?dir*2.8:0))*dt;r.velocity*=Math.exp(-.25*dt);r.angle+=r.velocity*dt;r.angle=Math.max(-.85,Math.min(.85,r.angle));if(Math.abs(r.angle)>=.85)r.velocity*=-.6;}
 if(p.climb){p.climbTime+=dt;p.pathT=Math.max(0,Math.min(this.pathLength(p.climb),p.pathT+dir*145*dt));const q=this.pointOn(p.climb,p.pathT);p.x=q.x-p.w/2;p.y=q.y-p.h/2;p.vx=0;p.vy=0;if(p.climb.slip&&p.climbTime>2.6){p.climb=null;this.detachLock=1.5;p.vy=100;this.notify('미끄러워! 점프로 빠져나가세요.');}}
 else if(p.rope){const q=this.ropeTip();p.x=q.x-p.w/2;p.y=q.y-p.h/2;p.vx=0;p.vy=0;}
-else{p.coyote=p.ground?.1:Math.max(0,p.coyote-dt);this.tryJump();p.vx=this.moveSpeed(dir,p);const c=this.world.crate;if(p.push){if(Math.abs(p.x+p.w/2-c.x-c.w/2)>125)p.push=false;else c.x=Math.max(this.stage.crateMin,Math.min(this.stage.crateMax,c.x+p.vx*dt));}const solids=[...this.world.solids,c];if(this.enemies.some(e=>e.required&&!e.boss&&!e.dead)&&p.x>this.stage.requiredGate-750)solids.push({x:this.stage.requiredGate,y:240,w:24,h:350});if(this.arena){solids.push({x:this.stage.arenaLeft,y:100,w:20,h:490});if(!this.enemies.find(e=>e.boss).dead)solids.push({x:this.stage.arenaRight,y:100,w:20,h:490});}p.x+=p.vx*dt;for(const s of solids)if(overlap(p,s)){if(p.vx>0)p.x=s.x-p.w;else if(p.vx<0)p.x=s.x+s.w;}p.x=Math.max(0,Math.min(this.stage.width-p.w,p.x));if(!this.input.jump&&p.vy< -200)p.vy+=1700*dt;p.vy+=1400*dt;const oldY=p.y;p.y+=p.vy*dt;p.ground=false;for(const s of solids)if(overlap(p,s)){if(p.vy>=0&&oldY+p.h<=s.y+8){p.y=s.y-p.h;p.vy=0;p.ground=true;}else if(p.vy<0&&oldY>=s.y+s.h-8){p.y=s.y+s.h;p.vy=0;}}if(p.y>820){const lethal=p.hp<=1&&p.inv<=0;this.hurt();if(!lethal){p.x=this.stage.respawnX(p.x);p.y=FLOOR-p.h;p.vy=0;p.inv=1.3;}}}
+else{p.coyote=p.ground?.1:Math.max(0,p.coyote-dt);this.tryJump();p.vx=this.moveSpeed(dir,p);const c=this.world.crate;if(p.push){if(Math.abs(p.x+p.w/2-c.x-c.w/2)>125)p.push=false;else c.x=Math.max(this.stage.crateMin,Math.min(this.stage.crateMax,c.x+p.vx*dt));}const solids=[...this.world.solids,c];if(this.enemies.some(e=>e.required&&!e.boss&&!e.dead)&&p.x>this.stage.requiredGate-750)solids.push({x:this.stage.requiredGate,y:240,w:24,h:350});if(this.arena){solids.push({x:this.stage.arenaLeft,y:100,w:ARENA_WALL_WIDTH,h:490});if(!this.enemies.find(e=>e.boss).dead)solids.push({x:this.stage.arenaRight,y:100,w:ARENA_WALL_WIDTH,h:490});}p.x+=p.vx*dt;for(const s of solids)if(overlap(p,s)){if(p.vx>0)p.x=s.x-p.w;else if(p.vx<0)p.x=s.x+s.w;}p.x=Math.max(0,Math.min(this.stage.width-p.w,p.x));if(!this.input.jump&&p.vy< -200)p.vy+=1700*dt;p.vy+=1400*dt;const oldY=p.y;p.y+=p.vy*dt;p.ground=false;for(const s of solids)if(overlap(p,s)){if(p.vy>=0&&oldY+p.h<=s.y+8){p.y=s.y-p.h;p.vy=0;p.ground=true;}else if(p.vy<0&&oldY>=s.y+s.h-8){p.y=s.y+s.h;p.vy=0;}}if(p.y>820){const lethal=p.hp<=1&&p.inv<=0;this.hurt();if(!lethal){p.x=this.stage.respawnX(p.x);p.y=FLOOR-p.h;p.vy=0;p.inv=1.3;}}}
 for(const item of this.world.sugar)if(!this.collected.has(item.id)&&!this.pending.has(item.id)&&Math.hypot(p.x+p.w/2-item.x,p.y+p.h/2-item.y)<46){this.pending.add(item.id);this.sound('sugar');this.emit({type:'spark',x:item.x,y:item.y});}
 for(const item of this.world.heal)if(!this.healTaken.has(item.id)&&p.hp<this.maxHp&&Math.hypot(p.x+p.w/2-item.x,p.y+p.h/2-item.y)<45){p.hp++;this.healTaken.add(item.id);this.sound('heal');this.notify('꿀방울 · 하트 +1');}
 for(let i=1;i<this.stage.checkpoints.length;i++)if(i>this.cp&&p.x>=this.stage.checkpoints[i].x&&p.ground)this.checkpoint(i);
@@ -97,7 +98,15 @@ if(this.stage.exitRequired&&p.x>=this.stage.exitRequired&&this.enemies.find(e=>e
 this.camera+=(Math.max(0,Math.min(this.stage.width-WIDTH,p.x-380))-this.camera)*Math.min(1,dt*6);
 }
 updateHazards(){const p=this.p;if(p.x>4240&&p.x<4700){const phase=this.time%4.4;if(phase>2.25&&phase<2.6&&p.ground)this.hurt();}}
-updateBoss(e,dt,dx){let speed=0;const fast=e.hp<=e.max/2?1.15:1;if(e.state==='walk'&&e.cool<=0){e.state='warn';e.timer=.85;e.dir=dx>0?1:-1;e.pattern=(e.pattern||0)+1;}if(e.state==='warn'){e.timer-=dt;if(e.timer<=0){e.state=e.pattern%2?'charge':'slam';e.timer=e.state==='charge'?1.1:.8;this.sound('boss');}}else if(e.state==='charge'){speed=e.dir*370*fast;e.timer-=dt;if(e.timer<=0){e.state='rest';e.timer=1.5;}}else if(e.state==='slam'){e.timer-=dt;e.y=FLOOR-Math.sin(Math.max(0,e.timer/.8)*Math.PI)*140;if(e.timer<=0){e.y=FLOOR;e.state='rest';e.timer=1.5;}}else if(e.state==='rest'){e.timer-=dt;if(e.timer<=0){e.state='walk';e.cool=.65;}}else if(e.state==='walk')speed=Math.sign(dx)*45;e.x=Math.max(this.stage.bossMin,Math.min(this.stage.bossMax-e.w,e.x+speed*dt));}
+bossOffset(boss){
+  return this.p.x+this.p.w/2-(boss.x+boss.w/2);
+}
+boundBossX(boss,x){
+  const left=this.stage.arenaLeft+ARENA_WALL_WIDTH;
+  const right=this.stage.arenaRight-boss.w;
+  return Math.max(left,Math.min(right,x));
+}
+updateBoss(e,dt){const dx=this.bossOffset(e);let speed=0;const fast=e.hp<=e.max/2?1.15:1;if(e.state==='walk'&&e.cool<=0){e.state='warn';e.timer=.85;e.dir=Math.sign(dx)||e.dir;e.pattern=(e.pattern||0)+1;}if(e.state==='warn'){e.timer-=dt;if(e.timer<=0){e.state=e.pattern%2?'charge':'slam';e.timer=e.state==='charge'?1.1:.8;this.sound('boss');}}else if(e.state==='charge'){speed=e.dir*370*fast;e.timer-=dt;if(e.timer<=0){e.state='rest';e.timer=1.5;}}else if(e.state==='slam'){e.timer-=dt;e.y=FLOOR-Math.sin(Math.max(0,e.timer/.8)*Math.PI)*140;if(e.timer<=0){e.y=FLOOR;e.state='rest';e.timer=1.5;}}else if(e.state==='rest'){e.timer-=dt;if(e.timer<=0){e.state='walk';e.cool=.65;}}else if(e.state==='walk')speed=Math.sign(dx)*45;e.x=this.boundBossX(e,e.x+speed*dt);}
 updateEnemies(dt){const p=this.p;for(const e of this.enemies){if(e.dead||Math.abs(e.x-p.x)>1000||e.boss&&!this.bossActive)continue;e.stun=Math.max(0,e.stun-dt);e.cool-=dt;if(e.stun>0)continue;const dx=p.x-e.x;let speed=0;if(e.boss){this.updateBoss(e,dt,dx);}
 else if(e.type==='smart'){if(e.cool<=0&&Math.abs(dx)<550){if(e.state!=='aim'){e.state='aim';e.timer=.85;e.dir=Math.sign(dx)||-1;}else{e.timer-=dt;if(e.timer<=0){this.seeds.push({x:e.x+e.w/2,y:e.y-55,vx:e.dir*290,vy:0,left:700});e.cool=2.5;e.state='walk';}}}}
 else if(e.type==='fat'){if(e.state==='charge'){speed=e.dir*230;e.timer-=dt;if(e.timer<=0){e.state='rest';e.cool=1.2;}}else if(e.state==='warn'){e.timer-=dt;if(e.timer<=0){e.state='charge';e.timer=.6;}}else if(Math.abs(dx)<330&&e.cool<=0){e.dir=Math.sign(dx)||-1;e.state='warn';e.timer=.8;}else{speed=Math.sign(dx)*23;if(e.cool<=0)e.state='walk';}}

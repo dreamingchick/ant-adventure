@@ -1,5 +1,26 @@
 import test from 'node:test';import assert from 'node:assert/strict';import {Game,freshProfile,sanitize,COSTS}from'../dist/engine.js';
+import {KitchenGame} from '../dist/stage2-engine.js';
 const run=()=>{const g=new Game();g.start();return g;};const tick=(g,n=60)=>{for(let i=0;i<n;i++)g.update(1/60);};
+
+for (const [chapter,GameType] of [[1,Game],[2,KitchenGame]]) {
+  for (const side of ['left','right']) {
+    test(`chapter ${chapter} boss charge can hit a player against the ${side} wall`,()=>{
+      const game=new GameType(freshProfile());
+      game.start();
+      const boss=game.enemies.find(enemy=>enemy.boss);
+      for(const enemy of game.enemies)if(!enemy.boss)enemy.dead=true;
+      game.bossActive=game.bossIntro=game.arena=true;
+      game.p.x=side==='left'?game.stage.arenaLeft+20:game.stage.arenaRight-game.p.w;
+      game.p.inv=0;
+      boss.x=game.p.x+(side==='left'?225:-225);
+      boss.cool=0;
+      tick(game,132);
+      assert.equal(game.p.hp,game.maxHp-1);
+      assert.ok(boss.x>=game.stage.arenaLeft+20);
+      assert.ok(boss.x+boss.w<=game.stage.arenaRight);
+    });
+  }
+}
 test('variable jump and grounded collision',()=>{let g=run();g.input.jump=true;g.jump();let high=g.p.y;for(let i=0;i<40;i++){g.update(1/60);high=Math.min(high,g.p.y);}g=run();g.jump();let low=g.p.y;for(let i=0;i<40;i++){g.update(1/60);low=Math.min(low,g.p.y);}assert.ok(high<low-35);tick(g);assert.equal(g.p.y+g.p.h,590);});
 test('spit spends gauge, cannot repeat while cooling down, recovers after delay',()=>{const g=run();assert.equal(g.attack(),true);assert.equal(g.p.spit,75);assert.equal(g.attack(),false);tick(g,30);assert.equal(g.p.spit,75);tick(g,60);assert.ok(g.p.spit>75);g.p.climb=g.world.paths[0];assert.equal(g.attack(),false);g.p.climb=null;g.p.rope=true;assert.equal(g.attack(),false);g.p.rope=false;g.p.ground=false;g.p.shotTimer=0;assert.equal(g.attack(),true);});
 test('checkpoint commits sugar; failure only rolls back uncommitted collection and current enemies',()=>{const g=run();g.pending.add('s0');g.enemies[0].dead=true;g.checkpoint(1);assert.equal(g.profile.bank,1);assert.ok(g.collected.has('s0'));g.pending.add('s9');g.enemies[1].dead=true;g.retry();assert.equal(g.pending.size,0);assert.equal(g.profile.bank,1);assert.equal(g.enemies[0].dead,true);assert.equal(g.enemies[1].dead,false);assert.equal(g.p.hp,g.maxHp);assert.equal(g.cp,1);});

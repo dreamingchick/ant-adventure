@@ -129,6 +129,7 @@ for(const input of document.querySelectorAll('#ant-name,#pause-name'))input.addE
 function showEnding(ending,done){
   clearInputs();
   for(const id of ['controls','hint','boss-hud','dialog','result'])$('#'+id).hidden=true;
+  $('#toast').classList.remove('show');
   wedding=ending.id;
   weddingStart=performance.now();
   $('#ending-title').textContent=ENDINGS[wedding].title;
@@ -274,6 +275,7 @@ if(thresholdChapter){
   $('#result h2').textContent='개미굴에 돌아왔어요.';
   $('#result .result-panel > p').textContent='바람이 잦아들고, 개미와 베짱이는 함께 문턱을 넘었습니다.';
   $('#replay').hidden=true;
+  $('#result .ending-note').hidden=true;
   if(review==='finale')beginBossReview();
   else if(canEnterChapter(3))start(Boolean(game.progress.run));
   else {
